@@ -175,7 +175,7 @@ td.mn{font-family:monospace;font-size:11px;color:var(--txt-s);}
       <button class="pbtn" onclick="setPer(30)">30d</button>
       <button class="pbtn" onclick="setPer(0)">Tudo</button>
       <button class="abtn" onclick="aplicar()">Aplicar</button>
-      <button class="ubtn" onclick="carregarDados()">↺ Atualizar</button>
+      <button class="ubtn" onclick="carregarDados(true)">↺ Atualizar</button>
     </div>
   </div>
 
@@ -392,7 +392,7 @@ window.addEventListener('load',function(){
   h30.setDate(h30.getDate()-30);
   document.getElementById('dtF').value=fd(h);
   document.getElementById('dtI').value=fd(h30);
-  carregarDados(); // primeira carga
+  carregarDados(false); // usa cache se disponível
 });
 
 function fd(d){return d.toISOString().split('T')[0];}
@@ -440,32 +440,82 @@ function aplicar(){
   renderTudo();
 }
 
-function carregarDados(){
-  toast('Carregando dados...');
-  fetch(SCRIPT_URL+'?action=registros')
-    .then(function(r){return r.json();})
-    .then(function(data){
-      todos=(data.registros||[]).map(function(r){
-        var dt=new Date(r[0]);
-        return{
-          data:dt,ds:fd(dt),
-          col:(r[1]||'').toString().toUpperCase().trim(),
-          tipo:(r[2]||'').toString().trim(),
-          os:(r[3]||'').toString().toUpperCase().trim(),
-          fac:(r[4]||'').toString().toUpperCase().trim(),
-          mod:modLabel((r[5]||'').toString().toUpperCase().trim()),
-          cor:(r[6]||'').toString().toUpperCase().trim(),
-          tam:(r[7]||'').toString().trim(),
-          tot:Number(r[8])||0,ok:Number(r[9])||0,
-          baz:Number(r[10])||0,con:Number(r[11])||0
-        };
-      });
+var CACHE_KEY='pangeia_dash_cache';
+var CACHE_TTL=15*60*1000; // 15 minutos em ms
+
+function processarRegistros(registros){
+  return registros.map(function(r){
+    var dt=new Date(r[0]);
+    return{
+      data:dt,ds:fd(dt),
+      col:(r[1]||'').toString().toUpperCase().trim(),
+      tipo:(r[2]||'').toString().trim(),
+      os:(r[3]||'').toString().toUpperCase().trim(),
+      fac:(r[4]||'').toString().toUpperCase().trim(),
+      mod:modLabel((r[5]||'').toString().toUpperCase().trim()),
+      cor:(r[6]||'').toString().toUpperCase().trim(),
+      tam:(r[7]||'').toString().trim(),
+      tot:Number(r[8])||0,ok:Number(r[9])||0,
+      baz:Number(r[10])||0,con:Number(r[11])||0
+    };
+  });
+}
+
+function salvarCache(registros){
+  try{
+    sessionStorage.setItem(CACHE_KEY,JSON.stringify({
+      ts:Date.now(),
+      registros:registros
+    }));
+  }catch(e){}
+}
+
+function lerCache(){
+  try{
+    var raw=sessionStorage.getItem(CACHE_KEY);
+    if(!raw)return null;
+    var obj=JSON.parse(raw);
+    if(Date.now()-obj.ts>CACHE_TTL)return null;
+    return obj;
+  }catch(e){return null;}
+}
+
+function carregarDados(forcar){
+  // Tenta usar cache se não for forçado
+  if(!forcar){
+    var cache=lerCache();
+    if(cache){
+      toast('⚡ Dados do cache ('+Math.round((Date.now()-cache.ts)/60000)+'min atrás)');
+      todos=processarRegistros(cache.registros);
       filtrar();
       limparFiltroTipoInterno();
       renderTudo();
-      toast('✔ '+todos.length+' registros carregados');
+      return;
+    }
+  }
+  toast('Carregando dados...');
+  fetch(SCRIPT_URL+'?action=registros&t='+Date.now())
+    .then(function(r){return r.json();})
+    .then(function(data){
+      var regs=data.registros||[];
+      salvarCache(regs);
+      todos=processarRegistros(regs);
+      filtrar();
+      limparFiltroTipoInterno();
+      renderTudo();
+      toast('✔ '+todos.length+' registros · cache atualizado');
     })
-    .catch(function(){toast('Erro ao carregar. Tente novamente.');});
+    .catch(function(){
+      // Se falhar, tenta usar cache mesmo expirado
+      var cache=lerCache();
+      if(cache){
+        toast('⚠ Sem conexão — usando cache salvo');
+        todos=processarRegistros(cache.registros);
+        filtrar();limparFiltroTipoInterno();renderTudo();
+      } else {
+        toast('Erro ao carregar. Tente novamente.');
+      }
+    });
 }
 
 function filtrar(){
