@@ -200,7 +200,7 @@ td.mn{font-family:monospace;font-size:11px;color:var(--txt-s);}
       <div class="kpi-ft"><span class="kpi-ft-l" id="kAC">—</span><span class="kpi-ft-v" id="kAM">—</span></div>
     </div>
     <div class="kpi" id="kpi-tot">
-      <div class="kpi-lbl" style="color:var(--c-acab)">Total Geral do Dia <span class="kpi-dt" id="kTD">—</span></div>
+      <div class="kpi-lbl" style="color:var(--c-acab)">Total Acabamento <span class="kpi-dt" id="kTD">—</span></div>
       <div class="kpi-val" style="color:var(--c-acab)" id="kTV">—</div>
       <div class="kpi-sub" id="kTS">—</div>
       <div class="kpi-ft"><span class="kpi-ft-l">Defeitos revisão</span><span class="kpi-ft-v" style="color:var(--bad)" id="kTDef">—</span></div>
@@ -578,7 +578,7 @@ function renderKPIs(){
   document.getElementById('kAC').textContent=cA+' colaboradoras';
   document.getElementById('kAM').textContent='média '+n(mA)+' pç/dia';
 
-  var rrTd=base.filter(function(r){return r.ds===dr;});
+  var rrTd=base.filter(function(r){return r.ds===dr&&TIPOS_ACAB.indexOf(r.tipo)>=0;});
   var tTd=rrTd.reduce(function(s,r){return s+r.tot;},0);
   var cTd=new Set(rrTd.map(function(r){return r.col;})).size;
   document.getElementById('kTD').textContent=lb;
@@ -691,7 +691,7 @@ function renderProd(){
 
   // Histórico
   var dh=Object.keys(pd).sort().reverse().slice(0,12);
-  var th=dh.map(function(d){return pd[d].lin+pd[d].troc+pd[d].etiq+pd[d].pren;});
+  var th=dh.map(function(d){return pd[d].lin+pd[d].troc;});
   var mh=th.length?th.reduce(function(s,v){return s+v;},0)/th.length:0;
   var hl=document.getElementById('histList');hl.innerHTML='';
   dh.forEach(function(d,i){
