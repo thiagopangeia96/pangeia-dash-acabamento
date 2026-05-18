@@ -303,11 +303,12 @@ td.mn{font-family:monospace;font-size:11px;color:var(--txt-s);}
   </div>
 
   <div class="tc" id="tab-qual">
-    <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:14px;">
+    <div class="kpi-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:14px;">
       <div class="kpi"><div class="kpi-lbl" style="color:var(--c-rev)">Total Revisado</div><div class="kpi-val" style="color:var(--c-rev)" id="qT">—</div><div class="kpi-sub">no período</div></div>
       <div class="kpi"><div class="kpi-lbl" style="color:var(--bad)">Total Defeitos</div><div class="kpi-val" style="color:var(--bad)" id="qD">—</div><div class="kpi-sub" id="qDP">—</div></div>
       <div class="kpi"><div class="kpi-lbl" style="color:var(--warn)">Bazar</div><div class="kpi-val" style="color:var(--warn)" id="qB">—</div><div class="kpi-sub" id="qBP">—</div></div>
       <div class="kpi"><div class="kpi-lbl" style="color:var(--bad)">Conserto</div><div class="kpi-val" style="color:var(--bad)" id="qC">—</div><div class="kpi-sub" id="qCP">—</div></div>
+      <div class="kpi"><div class="kpi-lbl" style="color:#5C4A1E">Sujo</div><div class="kpi-val" style="color:#5C4A1E" id="qSuj">—</div><div class="kpi-sub" id="qSujP">—</div></div>
     </div>
     <div class="g2">
       <div class="card">
@@ -351,9 +352,10 @@ td.mn{font-family:monospace;font-size:11px;color:var(--txt-s);}
 <div class="fc fac-c" id="fcFac">
   <button class="fx" onclick="fechar('fcFac')">×</button>
   <div class="fh" style="border-bottom-color:#FAECE7;"><div class="av fac" id="ffAv">—</div><div><div class="fn" id="ffNm">—</div><div class="fs" id="ffSb">—</div></div></div>
-  <div class="fk c2">
+  <div class="fk" style="grid-template-columns:repeat(3,1fr)">
     <div class="fki"><div class="fkl">Bazar</div><div class="fkv" style="color:var(--warn)" id="ffBaz">—</div></div>
     <div class="fki"><div class="fkl">Conserto</div><div class="fkv" style="color:var(--bad)" id="ffCon">—</div></div>
+    <div class="fki"><div class="fkl">Sujo</div><div class="fkv" style="color:#5C4A1E" id="ffSuj">—</div></div>
   </div>
   <div class="fst">O.S. com defeitos</div>
   <div class="foh"><span>O.S. / Modelo</span><span>Cor/Tam</span><span>Baz</span><span>Con</span><span>%Def</span></div>
@@ -608,7 +610,7 @@ function renderKPIs(){
 
   var rrRd=base.filter(function(r){return r.tipo===TIPO_REV&&r.ds===dr;});
   var tRd=rrRd.reduce(function(s,r){return s+r.tot;},0);
-  var dRd=rrRd.reduce(function(s,r){return s+r.baz+r.con;},0);
+  var dRd=rrRd.reduce(function(s,r){return s+r.baz+r.con+r.suj;},0);
   var cRd=new Set(rrRd.map(function(r){return r.col;})).size;
   document.getElementById('kRD').textContent=lb;
   document.getElementById('kRV').textContent=n(tRd);
@@ -831,18 +833,24 @@ function renderQual(){
   var tot=rq.reduce(function(s,r){return s+r.tot;},0);
   var baz=rq.reduce(function(s,r){return s+r.baz;},0);
   var con=rq.reduce(function(s,r){return s+r.con;},0);
+  var suj=rq.reduce(function(s,r){return s+r.suj;},0);
   document.getElementById('qT').textContent=n(tot);
-  document.getElementById('qD').textContent=n(baz+con);
-  document.getElementById('qDP').textContent=pct(baz+con,tot)+' do total';
+  document.getElementById('qD').textContent=n(baz+con+suj);
+  document.getElementById('qDP').textContent=pct(baz+con+suj,tot)+' do total';
   document.getElementById('qB').textContent=n(baz);
   document.getElementById('qBP').textContent=pct(baz,tot)+' do total';
   document.getElementById('qC').textContent=n(con);
   document.getElementById('qCP').textContent=pct(con,tot)+' do total';
+  // Sujo
+  var qSujEl=document.getElementById('qSuj');
+  var qSujPEl=document.getElementById('qSujP');
+  if(qSujEl)qSujEl.textContent=n(suj);
+  if(qSujPEl)qSujPEl.textContent=pct(suj,tot)+' do total';
 
   var pf={};
   rq.forEach(function(r){
     if(!pf[r.fac])pf[r.fac]={tot:0,baz:0,con:0,oss:{}};
-    pf[r.fac].tot+=r.tot;pf[r.fac].baz+=r.baz;pf[r.fac].con+=r.con;
+    pf[r.fac].tot+=r.tot;pf[r.fac].baz+=r.baz;pf[r.fac].con+=r.con;pf[r.fac].suj=(pf[r.fac].suj||0)+r.suj;
     var k=r.os+'|'+r.mod+'|'+r.cor+'|'+r.tam;
     if(!pf[r.fac].oss[k])pf[r.fac].oss[k]={os:r.os,mod:r.mod,cor:r.cor,tam:r.tam,baz:0,con:0,tot:0};
     pf[r.fac].oss[k].baz+=r.baz;pf[r.fac].oss[k].con+=r.con;pf[r.fac].oss[k].tot+=r.tot;
@@ -850,14 +858,17 @@ function renderQual(){
   var facs=Object.keys(pf).sort(function(a,b){return(pf[b].baz+pf[b].con)-(pf[a].baz+pf[a].con);});
 
   var t8=facs.slice(0,8);
-  var mx2=t8.length?Math.max.apply(null,t8.map(function(f){return pf[f].baz+pf[f].con;})):1;
+  var mx2=t8.length?Math.max.apply(null,t8.map(function(f){return pf[f].baz+pf[f].con+(pf[f].suj||0);})):1;
   var bd=document.getElementById('bcQual');bd.innerHTML='';
   t8.forEach(function(f){
     var d=pf[f];var pb=mx2?Math.round((d.baz/mx2)*100):0,pc2=mx2?Math.round((d.con/mx2)*100):0;
     var row=document.createElement('div');row.className='bc';
+    var ps=mx2?Math.round(((d.suj||0)/mx2)*100):0;
     row.innerHTML='<div class="bc-l">'+f+'</div>'
-      +'<div class="bc-b"><div class="baz-b" style="width:'+pb+'%"></div><div class="con-b" style="width:'+pc2+'%"></div></div>'
-      +'<div class="bc-v">'+d.baz+' / '+d.con+'</div>';
+      +'<div class="bc-b"><div class="baz-b" style="width:'+pb+'%"></div><div class="con-b" style="width:'+pc2+'%"></div>'
+      +(d.suj?'<div style="height:6px;border-radius:3px;background:#8B7340;width:'+ps+'%"></div>':'')
+      +'</div>'
+      +'<div class="bc-v">'+d.baz+'/'+d.con+(d.suj?'/'+d.suj:'')+'</div>';
     row.onclick=function(e){e.stopPropagation();abrirFac(e,f,pf[f]);};
     bd.appendChild(row);
   });
@@ -890,13 +901,13 @@ function renderQual(){
   rq.forEach(function(r){
     var k=r.os+'|'+r.mod+'|'+r.cor+'|'+r.tam;
     if(!pos[k])pos[k]={os:r.os,mod:r.mod,cor:r.cor,tam:r.tam,fac:r.fac,tot:0,baz:0,con:0};
-    pos[k].tot+=r.tot;pos[k].baz+=r.baz;pos[k].con+=r.con;
+    pos[k].tot+=r.tot;pos[k].baz+=r.baz;pos[k].con+=r.con;pos[k].suj=(pos[k].suj||0)+r.suj;
   });
-  var osL=Object.values(pos).filter(function(o){return o.baz+o.con>0;})
-    .sort(function(a,b){return(b.baz+b.con)-(a.baz+a.con);}).slice(0,30);
+  var osL=Object.values(pos).filter(function(o){return o.baz+o.con+(o.suj||0)>0;})
+    .sort(function(a,b){return(b.baz+b.con+(b.suj||0))-(a.baz+a.con+(a.suj||0));}).slice(0,30);
   var tb2=document.getElementById('tbOS');tb2.innerHTML='';
   osL.forEach(function(o){
-    var dp=o.tot?((o.baz+o.con)/o.tot*100).toFixed(1):0;
+    var dp=o.tot?((o.baz+o.con+(o.suj||0))/o.tot*100).toFixed(1):0;
     var pc3=dp>10?'p-bd':dp>5?'p-wn':'p-ok';
     tb2.innerHTML+='<tr><td><div style="font-weight:600;font-size:12px;">'+o.os+' · '+o.mod+'</div>'
       +'<div style="font-size:10px;color:var(--roxo-cl)">'+o.cor+' / '+o.tam+'</div></td>'
@@ -970,6 +981,8 @@ function abrirFac(e,nome,d){
   document.getElementById('ffSb').textContent=n(d.baz+d.con)+' defeitos · '+pct(d.baz+d.con,d.tot);
   document.getElementById('ffBaz').textContent=n(d.baz);
   document.getElementById('ffCon').textContent=n(d.con);
+  var ffSujEl=document.getElementById('ffSuj');
+  if(ffSujEl)ffSujEl.textContent=n(d.suj||0);
   var lst=document.getElementById('ffLst');lst.innerHTML='';
   Object.values(d.oss).filter(function(o){return o.baz+o.con>0;})
     .sort(function(a,b){return(b.baz+b.con)-(a.baz+a.con);})
