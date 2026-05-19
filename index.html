@@ -277,6 +277,7 @@ td.mn{font-family:monospace;font-size:11px;color:var(--txt-s);}
       <div class="comp-chips" id="compChips"></div>
       <div class="cw-comp"><canvas id="chartComp"></canvas></div>
       <div class="leg" id="compLeg"></div>
+  <div id="compInsight" style="margin-top:12px;background:var(--lav-l);border-radius:8px;padding:12px 14px;"></div>
     </div>
 
     <div class="card" style="margin-bottom:14px;">
@@ -325,11 +326,11 @@ td.mn{font-family:monospace;font-size:11px;color:var(--txt-s);}
     <div class="g2">
       <div class="card">
         <div class="ct">Defeitos por Facção <span>clique para ver O.S.</span></div>
-        <div class="tw"><table><thead><tr><th>Facção</th><th class="r">Total</th><th class="r">Bazar</th><th class="r">Conserto</th><th class="r">% Def.</th></tr></thead><tbody id="tbFac"></tbody></table></div>
+        <div class="tw"><table><thead><tr><th>Facção</th><th class="r">Total</th><th class="r">Bazar</th><th class="r">Conserto</th><th class="r">Sujo</th><th class="r">% Def.</th></tr></thead><tbody id="tbFac"></tbody></table></div>
       </div>
       <div class="card">
         <div class="ct">O.S. com mais defeitos</div>
-        <div class="tw"><table><thead><tr><th>O.S. / Modelo</th><th>Facção</th><th class="r">Bazar</th><th class="r">Conserto</th><th class="r">% Def.</th></tr></thead><tbody id="tbOS"></tbody></table></div>
+        <div class="tw"><table><thead><tr><th>O.S. / Modelo</th><th>Facção</th><th class="r">Bazar</th><th class="r">Conserto</th><th class="r">Sujo</th><th class="r">% Def.</th></tr></thead><tbody id="tbOS"></tbody></table></div>
       </div>
     </div>
   </div>
@@ -442,7 +443,7 @@ function aplicar(){
   renderTudo();
 }
 
-var CACHE_KEY='pangeia_dash_cache_v2';
+var CACHE_KEY='pangeia_dash_cache_v3';
 var CACHE_TTL=15*60*1000; // 15 minutos em ms
 
 function processarRegistros(registros){
@@ -458,8 +459,9 @@ function processarRegistros(registros){
       cor:(r[6]||'').toString().toUpperCase().trim(),
       tam:(r[7]||'').toString().trim(),
       tot:Number(r[8])||0,ok:Number(r[9])||0,
-      baz:Number(r[10])||0,con:Number(r[11])||0
-    };
+      baz:Number(r[10])||0,con:Number(r[11])||0,
+          suj:Number(r[12])||0
+        };
   });
 }
 
@@ -525,39 +527,44 @@ function filtrar(){
   var fim=document.getElementById('dtF').value;
   var ti=ini2?new Date(ini2+'T00:00:00').getTime():null;
   var tf=fim?new Date(fim+'T23:59:59').getTime():null;
-  var base=todos.filter(function(r){
+  // base = todos os registros no período (sem filtro de tipo)
+  window._base=todos.filter(function(r){
     var ts=r.data.getTime();
     if(ti&&ts<ti)return false;
     if(tf&&ts>tf)return false;
     return true;
   });
-  // Aplicar filtro de tipo se ativo
-  if(filtroTipoAtivo){
+  // filt = usado por renderProd (nunca filtra por Revisão)
+  if(filtroTipoAtivo&&filtroTipoAtivo!==TIPO_REV){
     if(filtroTipoAtivo==='__ACAB__'){
-      filt=base.filter(function(r){return TIPOS_ACAB.indexOf(r.tipo)>=0;});
+      filt=window._base.filter(function(r){return TIPOS_ACAB.indexOf(r.tipo)>=0;});
     } else {
-      filt=base.filter(function(r){return r.tipo===filtroTipoAtivo;});
+      filt=window._base.filter(function(r){return r.tipo===filtroTipoAtivo;});
     }
   } else {
-    filt=base;
+    filt=window._base;
   }
 }
 
 function filtrarPorTipo(tipo,kpiId){
-  if(filtroTipoAtivo===tipo){
-    limparFiltroTipo();
-    return;
-  }
+  if(filtroTipoAtivo===tipo){ limparFiltroTipo(); return; }
   filtroTipoAtivo=tipo;
   document.querySelectorAll('.kpi').forEach(function(k){k.classList.remove('kpi-active');});
   document.getElementById(kpiId).classList.add('kpi-active');
   var badge=document.getElementById('filterBadge');
   badge.classList.add('show');
-  var nomes={'Revisão':'Revisão','Linha / Embalagem':'Linha / Embalagem','Trocas e Consertos':'Trocas e Consertos','Etiquetagem':'Etiquetagem','Prensa Térmica':'Prensa Térmica','__ACAB__':'Acabamento (Linha+Trocas)'};
+  var nomes={'Revisão':'Revisão','Linha / Embalagem':'Linha / Embalagem',
+    'Trocas e Consertos':'Trocas e Consertos','Etiquetagem':'Etiquetagem',
+    'Prensa Térmica':'Prensa Térmica','__ACAB__':'Acabamento (Linha+Trocas)'};
   document.getElementById('filterTipoNome').textContent=nomes[tipo]||tipo;
+  // Filtro de Revisão afeta só qualidade; outros tipos afetam só produção
   filtrar();
-  renderProd();
-  renderQual();
+  if(tipo===TIPO_REV){
+    renderQual(); // só qualidade
+  } else {
+    renderProd(); // só produção
+    renderQual();
+  }
 }
 
 function limparFiltroTipo(){
@@ -684,8 +691,10 @@ function renderProd(){
     document.getElementById('chartDiaLabel').textContent='todos os tipos';
   }
 
-  charts.dia=new Chart(ctx,{type:'bar',data:{labels:dias.map(fb),datasets:datasets},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+  var pluginBarLabels={id:'barLabels',afterDatasetsDraw:function(chart){var ctx2=chart.ctx;chart.data.datasets.forEach(function(ds,i){var meta=chart.getDatasetMeta(i);if(ds.type==='line'||meta.hidden)return;meta.data.forEach(function(bar,j){var v=ds.data[j];if(!v||v<10)return;ctx2.save();ctx2.fillStyle='rgba(255,255,255,0.9)';ctx2.font='bold 9px sans-serif';ctx2.textAlign='center';ctx2.textBaseline='middle';var x=bar.x,y=bar.y+(bar.height||20)/2;ctx2.fillText(n(v),x,y);ctx2.restore();});});}};
+  charts.dia=new Chart(ctx,{type:'bar',data:{labels:dias.map(fb),datasets:datasets},plugins:[pluginBarLabels],
+    options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false}},
     scales:{x:{stacked:true,ticks:{font:{size:10}}},y:{stacked:false,ticks:{font:{size:10}}}}}});
 
   // Ranking colaboradoras
@@ -808,11 +817,14 @@ function renderComp(){
 
   if(charts.comp)charts.comp.destroy();
   var ctx=document.getElementById('chartComp').getContext('2d');
-  charts.comp=new Chart(ctx,{type:'line',data:{labels:dias.map(fb),datasets:datasets},
+  var pluginLineLabels={id:'lineLabels',afterDatasetsDraw:function(chart){var ctx2=chart.ctx;chart.data.datasets.forEach(function(ds,i){var meta=chart.getDatasetMeta(i);if(meta.hidden)return;meta.data.forEach(function(pt,j){var v=ds.data[j];if(!v||v<1)return;ctx2.save();ctx2.fillStyle=ds.borderColor||'#592C95';ctx2.font='bold 9px sans-serif';ctx2.textAlign='center';ctx2.textBaseline='bottom';ctx2.fillText(n(v),pt.x,pt.y-4);ctx2.restore();});});}};
+  charts.comp=new Chart(ctx,{type:'line',data:{labels:dias.map(fb),datasets:datasets},plugins:[pluginLineLabels],
     options:{responsive:true,maintainAspectRatio:false,
       plugins:{legend:{position:'top',labels:{font:{size:11},boxWidth:12}}},
       scales:{x:{ticks:{font:{size:10}}},y:{ticks:{font:{size:10}}}}}});
 
+  // Insight automático
+  gerarInsightComp(nomes, porCol, dias);
   // Legenda
   var leg=document.getElementById('compLeg');leg.innerHTML='';
   nomes.forEach(function(nm,i){
@@ -822,6 +834,41 @@ function renderComp(){
   });
 }
 
+function gerarInsightComp(nomes, porCol, dias){
+  var el=document.getElementById('compInsight');
+  if(!el||nomes.length<2)return;
+  // Calcular totais e médias
+  var stats=nomes.map(function(nm){
+    var vals=dias.map(function(d){return porCol[nm][d]||0;});
+    var tot=vals.reduce(function(s,v){return s+v;},0);
+    var diasAtivos=vals.filter(function(v){return v>0;}).length||1;
+    var media=Math.round(tot/diasAtivos);
+    // Tendência: comparar primeira metade com segunda metade
+    var meio=Math.floor(vals.length/2);
+    var p1=vals.slice(0,meio).reduce(function(s,v){return s+v;},0);
+    var p2=vals.slice(meio).reduce(function(s,v){return s+v;},0);
+    var tend=p2>p1?'crescente':p2<p1?'decrescente':'estável';
+    return{nm:nm,tot:tot,media:media,tend:tend};
+  });
+  stats.sort(function(a,b){return b.tot-a.tot;});
+  var lider=stats[0];
+  var insights=[];
+  insights.push('<strong>'+lider.nm+'</strong> lidera com <strong>'+n(lider.tot)+'</strong> peças no período');
+  stats.forEach(function(s,i){
+    if(i===0)return;
+    var diff=lider.tot-s.tot;
+    var pct2=lider.tot?((diff/lider.tot)*100).toFixed(0):0;
+    insights.push('<strong>'+s.nm+'</strong> produziu '+pct2+'% a menos ('+n(diff)+' peças de diferença)');
+  });
+  // Tendências
+  stats.forEach(function(s){
+    var emoji=s.tend==='crescente'?'📈':s.tend==='decrescente'?'📉':'➡️';
+    insights.push(emoji+' <strong>'+s.nm+'</strong>: tendência <strong>'+s.tend+'</strong> (média '+n(s.media)+' pç/dia ativo)');
+  });
+  el.innerHTML='<div style="font-size:10px;font-weight:700;color:var(--roxo);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">💡 Análise</div>'
+    +insights.map(function(i){return '<div style="font-size:12px;color:var(--txt);padding:4px 0;border-bottom:1px solid var(--lav-l)">'+i+'</div>';}).join('');
+}
+
 function toggleCompNome(nome){
   colabsSelecionadas.delete(nome);
   renderProd();
@@ -829,7 +876,8 @@ function toggleCompNome(nome){
 
 // ── QUALIDADE ─────────────────────────────────────────────────────────────────
 function renderQual(){
-  var rq=filt.filter(function(r){return r.tipo===TIPO_REV;});
+  var base=window._base||filt;
+  var rq=base.filter(function(r){return r.tipo===TIPO_REV;});
   var tot=rq.reduce(function(s,r){return s+r.tot;},0);
   var baz=rq.reduce(function(s,r){return s+r.baz;},0);
   var con=rq.reduce(function(s,r){return s+r.con;},0);
@@ -878,10 +926,13 @@ function renderQual(){
   var dq=Object.keys(pdq).sort().slice(-20);
   if(charts.def)charts.def.destroy();
   var c2=document.getElementById('chartDef').getContext('2d');
-  charts.def=new Chart(c2,{type:'line',data:{labels:dq.map(fb),datasets:[
-    {label:'Bazar',data:dq.map(function(d){return pdq[d].baz;}),borderColor:'#EF9F27',backgroundColor:'rgba(239,159,39,.1)',tension:.4,fill:true,pointRadius:3},
-    {label:'Conserto',data:dq.map(function(d){return pdq[d].con;}),borderColor:'#E24B4A',backgroundColor:'rgba(226,75,74,.08)',tension:.4,fill:true,pointRadius:3,borderDash:[4,2]}
-  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{font:{size:10}}},y:{ticks:{font:{size:10}}}}}});
+  var pluginDefLabels={id:'defLabels',afterDatasetsDraw:function(chart){var ctx2=chart.ctx;chart.data.datasets.forEach(function(ds,i){var meta=chart.getDatasetMeta(i);if(meta.hidden)return;meta.data.forEach(function(pt,j){var v=ds.data[j];if(!v||v<1)return;ctx2.save();ctx2.fillStyle=i===0?'#854F0B':'#A32D2D';ctx2.font='bold 9px sans-serif';ctx2.textAlign='center';ctx2.textBaseline='bottom';ctx2.fillText(n(v),pt.x,pt.y-4);ctx2.restore();});});}};
+  charts.def=new Chart(c2,{plugins:[pluginDefLabels],type:'line',data:{labels:dq.map(fb),datasets:[
+    {label:'Bazar',data:dq.map(function(d){return pdq[d].baz;}),borderColor:'#EF9F27',backgroundColor:'rgba(239,159,39,.1)',tension:.4,fill:true,pointRadius:4},
+    {label:'Conserto',data:dq.map(function(d){return pdq[d].con;}),borderColor:'#E24B4A',backgroundColor:'rgba(226,75,74,.08)',tension:.4,fill:true,pointRadius:4,borderDash:[4,2]}
+  ]},options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false}},
+    scales:{x:{ticks:{font:{size:10}}},y:{ticks:{font:{size:10}}}}}});
 
   var tb=document.getElementById('tbFac');tb.innerHTML='';
   facs.forEach(function(f){
@@ -892,6 +943,7 @@ function renderQual(){
     tr2.innerHTML='<td><strong>'+f+'</strong></td><td class="r">'+n(d.tot)+'</td>'
       +'<td class="r" style="color:var(--warn)">'+n(d.baz)+'</td>'
       +'<td class="r" style="color:var(--bad)">'+n(d.con)+'</td>'
+      +'<td class="r" style="color:#5C4A1E">'+n(d.suj||0)+'</td>'
       +'<td class="r"><span class="pill '+pc3+'">'+dp+'%</span></td>';
     tr2.onclick=function(e){e.stopPropagation();abrirFac(e,f,pf[f]);};
     tb.appendChild(tr2);
@@ -914,6 +966,7 @@ function renderQual(){
       +'<td class="mn">'+o.fac+'</td>'
       +'<td class="r" style="color:var(--warn)">'+n(o.baz)+'</td>'
       +'<td class="r" style="color:var(--bad)">'+n(o.con)+'</td>'
+      +'<td class="r" style="color:#5C4A1E">'+n(o.suj||0)+'</td>'
       +'<td class="r"><span class="pill '+pc3+'">'+dp+'%</span></td></tr>';
   });
 }
