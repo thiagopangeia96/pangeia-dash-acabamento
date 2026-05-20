@@ -478,7 +478,7 @@ function aplicar(){
   renderTudo();
 }
 
-var CACHE_KEY='pangeia_dash_cache_v3';
+var CACHE_KEY='pangeia_dash_cache_v4';
 var CACHE_TTL=15*60*1000; // 15 minutos em ms
 
 function processarRegistros(registros){
@@ -592,14 +592,9 @@ function filtrarPorTipo(tipo,kpiId){
     'Trocas e Consertos':'Trocas e Consertos','Etiquetagem':'Etiquetagem',
     'Prensa Térmica':'Prensa Térmica','__ACAB__':'Acabamento (Linha+Trocas)'};
   document.getElementById('filterTipoNome').textContent=nomes[tipo]||tipo;
-  // Filtro de Revisão afeta só qualidade; outros tipos afetam só produção
   filtrar();
-  if(tipo===TIPO_REV){
-    renderQual(); // só qualidade
-  } else {
-    renderProd(); // só produção
-    renderQual();
-  }
+  renderProd();
+  renderQual();
 }
 
 function limparFiltroTipo(){
@@ -689,7 +684,9 @@ function renderKPIs(){
 // ── PRODUTIVIDADE ─────────────────────────────────────────────────────────────
 function renderProd(){
   var pd={};
-  filt.forEach(function(r){
+  // Sempre usa _base para ter todos os tipos no gráfico
+  var pdSrc=window._base||filt;
+  pdSrc.forEach(function(r){
     if(!pd[r.ds])pd[r.ds]={lin:0,troc:0,etiq:0,pren:0,rev:0};
     if(r.tipo==='Linha / Embalagem')pd[r.ds].lin+=r.tot;
     else if(r.tipo==='Trocas e Consertos')pd[r.ds].troc+=r.tot;
@@ -707,7 +704,11 @@ function renderProd(){
     // Filtro por tipo específico — uma única linha
     var cor={'Revisão':'#AE76E5','Linha / Embalagem':'#1D9E75','Trocas e Consertos':'#185FA5','Etiquetagem':'#0891b2','Prensa Térmica':'#7c3aed'}[filtroTipoAtivo]||'#592C95';
     var campo={'Revisão':'rev','Linha / Embalagem':'lin','Trocas e Consertos':'troc','Etiquetagem':'etiq','Prensa Térmica':'pren'}[filtroTipoAtivo]||'lin';
-    datasets=[{label:filtroTipoAtivo,data:dias.map(function(d){return pd[d][campo]||0;}),backgroundColor:cor,borderColor:cor,type:'bar'}];
+    if(filtroTipoAtivo===TIPO_REV){
+      datasets=[{label:'Revisão',type:'line',data:dias.map(function(d){return pd[d].rev||0;}),borderColor:'#592C95',backgroundColor:'rgba(89,44,149,.15)',tension:.4,fill:true,pointRadius:5,pointBackgroundColor:'#592C95',borderWidth:2.5}];
+    } else {
+      datasets=[{label:filtroTipoAtivo,data:dias.map(function(d){return pd[d][campo]||0;}),backgroundColor:cor,borderColor:cor,type:'bar'}];
+    }
     document.getElementById('chartDiaLabel').textContent=filtroTipoAtivo;
   } else if(filtroTipoAtivo==='__ACAB__'){
     datasets=[
@@ -727,7 +728,8 @@ function renderProd(){
   }
 
   var pluginBarLabels={id:'barLabels',afterDatasetsDraw:function(chart){var ctx2=chart.ctx;chart.data.datasets.forEach(function(ds,i){var meta=chart.getDatasetMeta(i);if(ds.type==='line'||meta.hidden)return;meta.data.forEach(function(bar,j){var v=ds.data[j];if(!v||v<10)return;ctx2.save();ctx2.fillStyle='rgba(255,255,255,0.9)';ctx2.font='bold 9px sans-serif';ctx2.textAlign='center';ctx2.textBaseline='middle';var x=bar.x,y=bar.y+(bar.height||20)/2;ctx2.fillText(n(v),x,y);ctx2.restore();});});}};
-  charts.dia=new Chart(ctx,{type:'bar',data:{labels:dias.map(fb),datasets:datasets},plugins:[pluginBarLabels],
+  var pluginLineLabels={id:'lineLabels',afterDatasetsDraw:function(chart){var ctx2=chart.ctx;chart.data.datasets.forEach(function(ds,i){if(ds.type!=='line')return;var meta=chart.getDatasetMeta(i);if(meta.hidden)return;meta.data.forEach(function(pt,j){var v=ds.data[j];if(!v||v<1)return;ctx2.save();ctx2.fillStyle='#592C95';ctx2.font='bold 10px sans-serif';ctx2.textAlign='center';ctx2.textBaseline='bottom';ctx2.fillText(n(v),pt.x,pt.y-6);ctx2.restore();});});}};
+  charts.dia=new Chart(ctx,{type:'bar',data:{labels:dias.map(fb),datasets:datasets},plugins:[pluginBarLabels,pluginLineLabels],
     options:{responsive:true,maintainAspectRatio:false,
     plugins:{legend:{display:false}},
     scales:{x:{stacked:true,ticks:{font:{size:10}}},y:{stacked:false,ticks:{font:{size:10}}}}}});
