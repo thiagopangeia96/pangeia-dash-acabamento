@@ -152,6 +152,26 @@ td.mn{font-family:monospace;font-size:11px;color:var(--txt-s);}
 .colab-dia-nome{font-size:12px;font-weight:700;color:var(--txt);}
 .colab-dia-tipo{font-size:9px;color:var(--roxo-cl);font-weight:600;}
 .colab-dia-val{font-size:13px;font-weight:800;color:var(--roxo);}
+.sub-backdrop{position:fixed;inset:0;z-index:399;display:none;}
+.sub-backdrop.active{display:block;}
+.sub-popup{position:fixed;z-index:400;background:#fff;border-radius:14px;box-shadow:0 12px 48px rgba(89,44,149,.28);border:1.5px solid var(--lav);padding:0;width:360px;max-height:75vh;top:50%;left:50%;transform:translate(-50%,-50%);display:none;flex-direction:column;}
+.sub-popup.show{display:flex;animation:subIn .15s ease forwards;}@keyframes subIn{from{opacity:0;transform:translate(-50%,-50%) scale(.96)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+@keyframes fi2{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
+.sub-back{display:flex;align-items:center;gap:8px;padding:10px 14px 8px;border-bottom:1px solid var(--lav-l);cursor:pointer;color:var(--roxo);font-size:12px;font-weight:700;flex-shrink:0;border-radius:14px 14px 0 0;}
+.sub-back:hover{background:var(--lav-l);}
+.sub-title{font-size:13px;font-weight:800;color:var(--txt);padding:10px 14px 2px;}
+.sub-sub{font-size:10px;color:var(--txt-s);padding:0 14px 8px;}
+.sub-body{overflow-y:auto;flex:1;padding:0 14px 14px;}
+.sub-row{display:grid;grid-template-columns:1fr 44px 52px 44px;gap:4px;align-items:center;padding:6px 0;border-bottom:1px solid var(--lav-l);font-size:11px;}
+.sub-row:last-child{border-bottom:none;}
+.sub-row.hdr{font-size:9px;font-weight:700;color:var(--txt-s);text-transform:uppercase;letter-spacing:.05em;padding:4px 0;}
+.sub-row span:not(:first-child){text-align:right;}
+.sub-nome{font-weight:600;color:var(--txt);}
+.sub-val{font-weight:700;color:var(--roxo);text-align:right;}
+.mr.clickable{cursor:pointer;border-radius:6px;padding:5px 4px;margin:0 -4px;}
+.mr.clickable:hover{background:var(--lav-l);}
+.colab-dia-row.clickable{cursor:pointer;border-radius:6px;padding:5px 4px;margin:0 -4px;}
+.colab-dia-row.clickable:hover{background:var(--lav-l);}
 .toast{position:fixed;bottom:24px;right:24px;background:var(--roxo);color:#fff;padding:12px 20px;border-radius:10px;font-weight:600;font-size:13px;box-shadow:0 8px 24px rgba(89,44,149,.3);opacity:0;transform:translateY(10px);transition:opacity .25s,transform .25s;pointer-events:none;z-index:400;}
 .toast.show{opacity:1;transform:translateY(0);}
 .footer{text-align:center;margin-top:20px;padding:14px;color:var(--txt-s);font-size:12px;}
@@ -338,7 +358,7 @@ td.mn{font-family:monospace;font-size:11px;color:var(--txt-s);}
   <div class="footer"><strong>Pangeia 96</strong> · Dashboard de Produtividade — Acabamento</div>
 </div>
 
-<div class="fbk" id="fbk" onclick="fecharTodos()"></div>
+<div class="fbk" id="fbk" onclick="fecharSubPopup();fecharTodos()"></div>
 <div class="fc col" id="fcCol">
   <button class="fx" onclick="fechar('fcCol')">×</button>
   <div class="fh"><div class="av" id="ccAv">—</div><div><div class="fn" id="ccNm">—</div><div class="fs" id="ccSb">—</div></div></div>
@@ -375,6 +395,21 @@ td.mn{font-family:monospace;font-size:11px;color:var(--txt-s);}
     <div><div class="fst">Por modelo</div><div id="fdMl"></div></div>
     <div><div class="fst">Por colaboradora</div><div id="fdCl"></div></div>
   </div>
+</div>
+<!-- SUB-POPUP dentro do fcDia -->
+<div class="sub-backdrop" id="subBackdrop" onclick="fecharSubPopup()"></div>
+<div class="sub-popup" id="subPopup">
+  <div class="sub-back" onclick="fecharSubPopup()">← Voltar</div>
+  <div class="sub-title" id="subTitle">—</div>
+  <div class="sub-sub" id="subSub">—</div>
+  <div class="sub-body" id="subBody"></div>
+</div>
+<div class="sub-backdrop" id="subBackdrop" onclick="fecharSubPopup()"></div>
+<div class="sub-popup" id="subPopup">
+  <div class="sub-back" onclick="fecharSubPopup()">← Voltar</div>
+  <div class="sub-title" id="subTitle">—</div>
+  <div class="sub-sub" id="subSub">—</div>
+  <div class="sub-body" id="subBody"></div>
 </div>
 <div class="toast" id="toast"></div>
 
@@ -1003,7 +1038,7 @@ function limMCT(){['fMod','fCor','fTam'].forEach(function(id){var el=document.ge
 
 // ── FLOAT CARDS ───────────────────────────────────────────────────────────────
 function abrirCard(id){fecharTodos();document.getElementById(id).style.display='block';document.getElementById('fbk').classList.add('active');}
-function fechar(id){document.getElementById(id).style.display='none';var ab=['fcCol','fcFac','fcDia'].some(function(i){return document.getElementById(i).style.display==='block';});if(!ab)document.getElementById('fbk').classList.remove('active');}
+function fechar(id){fecharSubPopup();document.getElementById(id).style.display='none';var ab=['fcCol','fcFac','fcDia'].some(function(i){return document.getElementById(i).style.display==='block';});if(!ab)document.getElementById('fbk').classList.remove('active');}
 function fecharTodos(){['fcCol','fcFac','fcDia'].forEach(fechar);}
 
 function abrirCol(e,nome,d){
@@ -1070,6 +1105,9 @@ function abrirDia(e,ds,dd){
   });
 
   var mods={},cols={};
+  // Guardar registros detalhados do dia para sub-popup
+  window._diaDS=ds;
+  window._diaRecs=filt.filter(function(r){return r.ds===ds;});
   filt.forEach(function(r){
     if(r.ds!==ds)return;
     if(!cols[r.col])cols[r.col]={tot:0,tipos:{}};
@@ -1087,19 +1125,106 @@ function abrirDia(e,ds,dd){
   document.getElementById('fdMc').textContent=mc||'0';
   var ml=document.getElementById('fdMl');ml.innerHTML='';
   if(!mc){ml.innerHTML='<div style="font-size:11px;color:var(--txt-s);padding:8px 0">Sem dados</div>';}
-  else{Object.entries(mods).sort(function(a,b){return b[1]-a[1];}).forEach(function(m){ml.innerHTML+='<div class="mr"><span class="mn12">'+m[0]+'</span><span class="mv">'+n(m[1])+'</span></div>';});}
+  else{Object.entries(mods).sort(function(a,b){return b[1]-a[1];}).forEach(function(m){
+    var div=document.createElement('div');
+    div.className='mr clickable';
+    div.innerHTML='<span class="mn12">'+m[0]+'</span><span class="mv">'+n(m[1])+'</span>';
+    div.onclick=function(e){e.stopPropagation();abrirSubModelo(m[0],e);};
+    ml.appendChild(div);
+  });}
 
   var cl=document.getElementById('fdCl');cl.innerHTML='';
   Object.entries(cols).sort(function(a,b){return b[1].tot-a[1].tot;}).forEach(function(en){
     var nm=en[0],d=en[1];
     var tp2=Object.entries(d.tipos).sort(function(a,b){return b[1]-a[1];})[0];
     var ta=(tp2?tp2[0]:'').replace('Linha / Embalagem','Linha/Emb.').replace('Trocas e Consertos','Trocas').replace('Prensa Térmica','Prensa');
-    cl.innerHTML+='<div class="colab-dia-row"><div class="colab-dia-top">'
-      +'<span class="colab-dia-nome">'+nm+'</span>'
-      +'<span class="colab-dia-val">'+n(d.tot)+'</span>'
-      +'</div>'+(ta?'<span class="colab-dia-tipo">'+ta+'</span>':'')+'</div>';
+    (function(nome,dados,tipo){
+      var div=document.createElement('div');
+      div.className='colab-dia-row clickable';
+      div.innerHTML='<div class="colab-dia-top"><span class="colab-dia-nome">'+nome+'</span>'
+        +'<span class="colab-dia-val">'+n(dados.tot)+'</span></div>'
+        +(tipo?'<span class="colab-dia-tipo">'+tipo+'</span>':'');
+      div.onclick=function(e){e.stopPropagation();abrirSubColab(nome,e);};
+      cl.appendChild(div);
+    })(nm,d,ta);
   });
   abrirCard('fcDia');
+}
+
+function abrirSubPopup(e){
+  document.getElementById('subPopup').classList.add('show');
+  document.getElementById('subBackdrop').classList.add('active');
+}
+
+function fecharSubPopup(){
+  document.getElementById('subPopup').classList.remove('show');
+  document.getElementById('subBackdrop').classList.remove('active');
+}
+
+function abrirSubModelo(nomeModelo,e){
+  // Filtrar registros do dia pelo modelo (nome base)
+  var recs=window._diaRecs||[];
+  var filtrados=recs.filter(function(r){
+    var base=r.mod.split(' — ')[0].trim();
+    return base===nomeModelo && TIPOS_ACAB.indexOf(r.tipo)>=0;
+  });
+
+  // Agrupar por cor + tamanho
+  var grupos={};
+  filtrados.forEach(function(r){
+    var k=r.cor+'||'+r.tam;
+    if(!grupos[k])grupos[k]={cor:r.cor,tam:r.tam,tipo:r.mod.split(' — ')[1]||'',tot:0};
+    grupos[k].tot+=r.tot;
+  });
+
+  var total=filtrados.reduce(function(s,r){return s+r.tot;},0);
+  document.getElementById('subTitle').textContent=nomeModelo+' — '+n(total)+' peças';
+  document.getElementById('subSub').textContent='Distribuição por cor e tamanho no dia '+fb(window._diaDS);
+
+  var body=document.getElementById('subBody');
+  body.innerHTML='<div class="sub-row hdr"><span>Cor / Tipo</span><span>Tam</span><span>Total</span><span></span></div>';
+  Object.values(grupos).sort(function(a,b){return b.tot-a.tot;}).forEach(function(g){
+    var pct2=total?((g.tot/total)*100).toFixed(0)+'%':'';
+    body.innerHTML+='<div class="sub-row">'
+      +'<span class="sub-nome">'+g.cor+(g.tipo?' <span style="font-size:10px;color:var(--roxo-cl)">'+g.tipo+'</span>':'')+'</span>'
+      +'<span style="color:var(--txt-s)">'+g.tam+'</span>'
+      +'<span class="sub-val">'+n(g.tot)+'</span>'
+      +'<span style="font-size:10px;color:var(--txt-s)">'+pct2+'</span>'
+      +'</div>';
+  });
+
+  abrirSubPopup(e);
+}
+
+function abrirSubColab(nomeColab,e){
+  var recs=window._diaRecs||[];
+  var filtrados=recs.filter(function(r){return r.col===nomeColab;});
+
+  // Agrupar por modelo + cor + tamanho
+  var grupos={};
+  filtrados.forEach(function(r){
+    var k=r.mod+'||'+r.cor+'||'+r.tam;
+    if(!grupos[k])grupos[k]={mod:r.mod,cor:r.cor,tam:r.tam,tot:0};
+    grupos[k].tot+=r.tot;
+  });
+
+  var total=filtrados.reduce(function(s,r){return s+r.tot;},0);
+  document.getElementById('subTitle').textContent=nomeColab+' — '+n(total)+' peças';
+  document.getElementById('subSub').textContent='Detalhamento por modelo, cor e tamanho no dia '+fb(window._diaDS);
+
+  var body=document.getElementById('subBody');
+  body.innerHTML='<div class="sub-row hdr"><span>Modelo</span><span>Cor</span><span>Tam</span><span>Total</span></div>';
+  Object.values(grupos).sort(function(a,b){return b.tot-a.tot;}).forEach(function(g){
+    var pts=g.mod.split(' — ');
+    body.innerHTML+='<div class="sub-row">'
+      +'<span class="sub-nome">'+pts[0]+(pts[1]?' <span style="font-size:10px;color:var(--roxo-cl)">'+pts[1]+'</span>':'')+'</span>'
+      +'<span style="color:var(--txt-s)">'+g.cor+'</span>'
+      +'<span style="color:var(--txt-s)">'+g.tam+'</span>'
+      +'<span class="sub-val">'+n(g.tot)+'</span>'
+      +'</div>';
+  });
+
+  abrirSubPopup(e);
 }
 
 function goTab(id,btn){
