@@ -257,6 +257,7 @@ td.mn{font-family:monospace;font-size:11px;color:var(--txt-s);}
   <div class="tabs">
     <button class="tab active" onclick="goTab('prod',this)">📊 Produtividade</button>
     <button class="tab" onclick="goTab('qual',this)">⚠️ Qualidade</button>
+    <button class="tab" onclick="goTab('falhas',this)">🔍 Controle de Falhas</button>
   </div>
 
   <div class="tc active" id="tab-prod">
@@ -352,6 +353,51 @@ td.mn{font-family:monospace;font-size:11px;color:var(--txt-s);}
         <div class="ct">O.S. com mais defeitos</div>
         <div class="tw"><table><thead><tr><th>O.S. / Modelo</th><th>Facção</th><th class="r">Bazar</th><th class="r">Conserto</th><th class="r">Sujo</th><th class="r">% Def.</th></tr></thead><tbody id="tbOS"></tbody></table></div>
       </div>
+    </div>
+  </div>
+
+  <!-- TAB CONTROLE DE FALHAS -->
+  <div class="tc" id="tab-falhas">
+    <div class="card" style="margin-bottom:14px;">
+      <div class="ct">🔍 Rastreabilidade de Peças <span>filtre por qualquer combinação — resultado em tempo real</span></div>
+      <div style="background:#FEF3C7;border:1px solid #F59E0B;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#854F0B;">
+        ⚠️ <strong>Atenção:</strong> Esta rastreabilidade é indicativa. Identifica colaboradoras que processaram o item no período, mas não garante que seja exatamente a peça com defeito.
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr) repeat(2,1fr);gap:10px;margin-bottom:12px;">
+        <div>
+          <label style="font-size:10px;font-weight:700;color:var(--txt-s);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:4px;">Facção</label>
+          <input type="text" id="rfFac" placeholder="Ex: CKL, VITÓRIA..." oninput="renderFalhas()" style="width:100%;padding:8px 12px;border:1px solid var(--brd);border-radius:8px;font-size:13px;font-family:inherit;outline:none;color:var(--txt);">
+        </div>
+        <div>
+          <label style="font-size:10px;font-weight:700;color:var(--txt-s);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:4px;">O.S.</label>
+          <input type="text" id="rfOS" placeholder="Ex: 1856A..." oninput="renderFalhas()" style="width:100%;padding:8px 12px;border:1px solid var(--brd);border-radius:8px;font-size:13px;font-family:inherit;outline:none;color:var(--txt);">
+        </div>
+        <div>
+          <label style="font-size:10px;font-weight:700;color:var(--txt-s);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:4px;">Modelo</label>
+          <input type="text" id="rfMod" placeholder="Ex: ALISON, MIA..." oninput="renderFalhas()" style="width:100%;padding:8px 12px;border:1px solid var(--brd);border-radius:8px;font-size:13px;font-family:inherit;outline:none;color:var(--txt);">
+        </div>
+        <div>
+          <label style="font-size:10px;font-weight:700;color:var(--txt-s);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:4px;">Cor</label>
+          <input type="text" id="rfCor" placeholder="Ex: PRETO..." oninput="renderFalhas()" style="width:100%;padding:8px 12px;border:1px solid var(--brd);border-radius:8px;font-size:13px;font-family:inherit;outline:none;color:var(--txt);">
+        </div>
+        <div>
+          <label style="font-size:10px;font-weight:700;color:var(--txt-s);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:4px;">Tamanho</label>
+          <input type="text" id="rfTam" placeholder="Ex: P, M, G..." oninput="renderFalhas()" style="width:100%;padding:8px 12px;border:1px solid var(--brd);border-radius:8px;font-size:13px;font-family:inherit;outline:none;color:var(--txt);">
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+        <button onclick="limparFalhas()" style="padding:7px 14px;border:1px solid var(--brd);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;background:#fff;color:var(--roxo);">✕ Limpar filtros</button>
+        <div id="rfResumo" style="font-size:12px;color:var(--txt-s);"></div>
+      </div>
+      <div id="rfAviso" style="display:none;background:var(--lav-l);border:1px solid var(--lav);border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:12px;color:var(--roxo);font-weight:600;"></div>
+      <div class="tw"><table>
+        <thead><tr>
+          <th>Colaboradora</th><th>Tipo</th><th>Data</th>
+          <th>O.S.</th><th>Modelo</th><th>Cor</th><th class="r">Tam</th>
+          <th>Facção</th><th class="r">Qtd</th>
+        </tr></thead>
+        <tbody id="tbFalhas"></tbody>
+      </table></div>
     </div>
   </div>
 
@@ -1229,11 +1275,89 @@ function abrirSubColab(nomeColab,e){
   abrirSubPopup(e);
 }
 
+function renderFalhas(){
+  var fFac = (document.getElementById('rfFac').value||'').toUpperCase().trim();
+  var fOS  = (document.getElementById('rfOS').value||'').toUpperCase().trim();
+  var fMod = (document.getElementById('rfMod').value||'').toUpperCase().trim();
+  var fCor = (document.getElementById('rfCor').value||'').toUpperCase().trim();
+  var fTam = (document.getElementById('rfTam').value||'').toUpperCase().trim();
+
+  var base = window._base || filt;
+  var temFiltro = fFac||fOS||fMod||fCor||fTam;
+
+  if(!temFiltro){
+    document.getElementById('tbFalhas').innerHTML='<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--txt-s);">Preencha ao menos um campo para rastrear</td></tr>';
+    document.getElementById('rfResumo').textContent='';
+    document.getElementById('rfAviso').style.display='none';
+    return;
+  }
+
+  var resultado = base.filter(function(r){
+    if(fFac && r.fac.indexOf(fFac)<0) return false;
+    if(fOS  && r.os.indexOf(fOS)<0)   return false;
+    if(fMod && r.mod.toUpperCase().indexOf(fMod)<0) return false;
+    if(fCor && r.cor.indexOf(fCor)<0) return false;
+    if(fTam && r.tam.toUpperCase().indexOf(fTam)<0) return false;
+    return true;
+  });
+
+  // Colaboradoras únicas envolvidas
+  var colabs = [...new Set(resultado.map(function(r){return r.col;}))];
+  var total  = resultado.reduce(function(s,r){return s+r.tot;},0);
+
+  document.getElementById('rfResumo').textContent =
+    resultado.length + ' registro(s) · ' + n(total) + ' peças · ' + colabs.length + ' colaboradora(s)';
+
+  // Aviso com colaboradoras
+  var aviso = document.getElementById('rfAviso');
+  if(colabs.length>0){
+    aviso.style.display='block';
+    aviso.innerHTML='🔍 Colaboradoras que processaram este item: <strong>'
+      + colabs.join(', ') + '</strong>';
+  } else {
+    aviso.style.display='none';
+  }
+
+  var tb = document.getElementById('tbFalhas');
+  tb.innerHTML='';
+
+  if(!resultado.length){
+    tb.innerHTML='<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--txt-s);">Nenhum registro encontrado com esses filtros</td></tr>';
+    return;
+  }
+
+  // Ordenar por data desc
+  resultado.sort(function(a,b){return b.data-a.data;});
+
+  resultado.forEach(function(r){
+    var pts = r.mod.split(' — ');
+    tb.innerHTML += '<tr>'
+      +'<td><strong>'+r.col+'</strong></td>'
+      +'<td style="font-size:11px;color:var(--txt-s)">'+r.tipo+'</td>'
+      +'<td class="mn">'+fb(r.ds)+'</td>'
+      +'<td class="mn">'+r.os+'</td>'
+      +'<td><strong>'+pts[0]+'</strong>'+(pts[1]?'<span style="font-size:10px;color:var(--roxo-cl);margin-left:4px">'+pts[1]+'</span>':'')+'</td>'
+      +'<td style="color:var(--txt-s)">'+r.cor+'</td>'
+      +'<td class="r">'+r.tam+'</td>'
+      +'<td style="font-size:11px">'+r.fac+'</td>'
+      +'<td class="r" style="color:var(--roxo);font-weight:700">'+n(r.tot)+'</td>'
+      +'</tr>';
+  });
+}
+
+function limparFalhas(){
+  ['rfFac','rfOS','rfMod','rfCor','rfTam'].forEach(function(id){
+    document.getElementById(id).value='';
+  });
+  renderFalhas();
+}
+
 function goTab(id,btn){
   document.querySelectorAll('.tc').forEach(function(t){t.classList.remove('active');});
   document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
   document.getElementById('tab-'+id).classList.add('active');
   btn.classList.add('active');
+  if(id==='falhas') renderFalhas();
 }
 
 function toast(msg){
