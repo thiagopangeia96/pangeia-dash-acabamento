@@ -528,8 +528,9 @@ var CACHE_KEY='pangeia_dash_cache_v4';
 var CACHE_TTL=15*60*1000; // 15 minutos em ms
 
 function processarRegistros(registros){
-  return registros.map(function(r){
+  return registros.filter(function(r){return r&&r[0];}).map(function(r){
     var dt=new Date(r[0]);
+    if(isNaN(dt.getTime()))dt=new Date();
     return{
       data:dt,ds:fd(dt),
       col:(r[1]||'').toString().toUpperCase().trim(),
