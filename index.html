@@ -176,6 +176,20 @@ td.mn{font-family:monospace;font-size:11px;color:var(--txt-s);}
 .toast.show{opacity:1;transform:translateY(0);}
 .footer{text-align:center;margin-top:20px;padding:14px;color:var(--txt-s);font-size:12px;}
 .footer strong{color:var(--roxo);}
+
+.insight-colab{display:none;background:linear-gradient(135deg,var(--lav-l),#fff);border:1px solid var(--lav);border-radius:8px;padding:8px 14px;margin-top:8px;font-size:12px;color:var(--roxo);font-weight:600;}
+.insight-colab.show{display:block;}
+.media-card{background:#fff;border:1px solid var(--brd);border-radius:10px;padding:10px 14px;margin-bottom:10px;cursor:pointer;transition:all .15s;display:flex;justify-content:space-between;align-items:center;}
+.media-card:hover{border-color:var(--roxo-cl);background:var(--lav-l);}
+.media-card-lbl{font-size:10px;font-weight:800;color:var(--roxo);text-transform:uppercase;letter-spacing:.07em;}
+.media-card-sub{font-size:11px;color:var(--txt-s);margin-top:2px;}
+.media-popup{position:fixed;z-index:300;background:#fff;border-radius:14px;box-shadow:0 16px 48px rgba(89,44,149,.22);border:1.5px solid var(--lav);padding:0;width:480px;max-height:80vh;display:none;flex-direction:column;top:50%;left:50%;transform:translate(-50%,-50%);animation:fi .18s ease;}
+.media-popup.show{display:flex;}
+.media-popup-head{padding:14px 16px 10px;border-bottom:1px solid var(--lav-l);display:flex;justify-content:space-between;align-items:center;flex-shrink:0;}
+.media-popup-body{overflow-y:auto;flex:1;padding:12px 16px 16px;}
+.media-row{display:grid;grid-template-columns:1fr 90px 80px;gap:8px;padding:8px 0;border-bottom:1px solid var(--lav-l);font-size:12px;align-items:center;}
+.media-row:last-child{border-bottom:none;}
+.media-row-hdr{font-size:10px;font-weight:700;color:var(--txt-s);text-transform:uppercase;letter-spacing:.05em;}
 </style>
 </head>
 <body>
@@ -272,6 +286,7 @@ td.mn{font-family:monospace;font-size:11px;color:var(--txt-s);}
           <span><span class="ld" style="background:var(--c-pren)"></span>Prensa</span>
           <span><span class="ld" style="background:var(--c-rev);opacity:.5"></span>Revisão</span>
         </div>
+        <div id="insightColab" class="insight-colab"></div>
         <div style="margin-top:16px;">
           <div class="team-hdr">
             <span>Colaboradora — total do período</span>
@@ -284,6 +299,7 @@ td.mn{font-family:monospace;font-size:11px;color:var(--txt-s);}
         </div>
       </div>
       <div class="card">
+        <div class="ct" style="cursor:pointer;" onclick="abrirMediaProd()">📊 Produtividade Média <span>clique para ver</span></div>
         <div class="ct">Histórico por dia <span>clique para detalhes</span></div>
         <div id="histList"></div>
       </div>
@@ -401,7 +417,21 @@ td.mn{font-family:monospace;font-size:11px;color:var(--txt-s);}
     </div>
   </div>
 
-  <div class="footer"><strong>Pangeia 96</strong> · Dashboard de Produtividade — Acabamento</div>
+  <!-- POPUP MÉDIA PRODUTIVIDADE -->
+<div class="fbk" id="mediaBkd" onclick="fecharMediaProd()"></div>
+<div class="fc" id="mediaPopup" style="width:min(680px,94vw);max-height:88vh;overflow-x:hidden;display:none;flex-direction:column;">
+  <button class="fx" onclick="fecharMediaProd()">×</button>
+  <div class="fh">
+    <div class="av-eq" style="background:linear-gradient(135deg,var(--roxo),var(--roxo-esc));">📊</div>
+    <div>
+      <div class="fn">Produtividade Média</div>
+      <div class="fs" id="mediaPopSub">—</div>
+    </div>
+  </div>
+  <div id="mediaPopBody"></div>
+</div>
+
+<div class="footer"><strong>Pangeia 96</strong> · Dashboard de Produtividade — Acabamento</div>
 </div>
 
 <div class="fbk" id="fbk" onclick="fecharSubPopup();fecharTodos()"></div>
@@ -657,6 +687,155 @@ function limparFiltroTipoInterno(){
   document.getElementById('filterBadge').classList.remove('show');
 }
 
+
+function calcMediaColabs(){
+  var porColab={}, porArea={};
+  filt.forEach(function(r){
+    // Por área — inclui revisão
+    if(!porArea[r.tipo]) porArea[r.tipo]={total:0,dias:new Set()};
+    porArea[r.tipo].total+=r.tot;
+    porArea[r.tipo].dias.add(r.ds);
+    // Por colaboradora — inclui todos os tipos
+    if(!porColab[r.col]) porColab[r.col]={diasPorTipo:{}};
+    if(!porColab[r.col].diasPorTipo[r.tipo]) porColab[r.col].diasPorTipo[r.tipo]={total:0,dias:new Set()};
+    porColab[r.col].diasPorTipo[r.tipo].total+=r.tot;
+    porColab[r.col].diasPorTipo[r.tipo].dias.add(r.ds);
+  });
+  // Médias por área
+  var mediasArea={};
+  Object.keys(porArea).forEach(function(t){
+    var a=porArea[t];
+    mediasArea[t]=Math.round(a.total/(a.dias.size||1));
+  });
+  var colabs = Object.keys(porColab).map(function(col){
+    var d=porColab[col];
+    // Área predominante = onde trabalhou mais DIAS
+    var tp=Object.keys(d.diasPorTipo).sort(function(a,b){
+      return d.diasPorTipo[b].dias.size - d.diasPorTipo[a].dias.size;
+    })[0]||'';
+    // Média e dias da área predominante
+    var areaDados=d.diasPorTipo[tp]||{total:0,dias:new Set()};
+    var dias=areaDados.dias.size||1;
+    var media=Math.round(areaDados.total/dias);
+    // Total geral (todas as áreas)
+    var total=Object.values(d.diasPorTipo).reduce(function(s,a){return s+a.total;},0);
+    // Dias totais únicos
+    var diasSet=new Set();
+    Object.values(d.diasPorTipo).forEach(function(a){a.dias.forEach(function(dd){diasSet.add(dd);});});
+    var tipoLabel=tp.replace('Linha / Embalagem','Linha/Emb.').replace('Trocas e Consertos','Trocas').replace('Prensa Térmica','Prensa');
+    return{col:col,total:total,dias:diasSet.size||1,media:media,tipo:tipoLabel,tipoFull:tp};
+  }).filter(function(d){return d.dias>=2;}).sort(function(a,b){return b.media-a.media;});
+  return{colabs:colabs, mediasArea:mediasArea};
+}
+
+function abrirMediaProd(){
+  // Metas base por área
+  // Meta de ÁREA (média esperada da equipe toda)
+  var METAS_AREA={
+    'Etiquetagem':3000,'Revisão':4000,
+    'Linha / Embalagem':3000,'Prensa Térmica':1500,'Trocas e Consertos':400
+  };
+  // Meta INDIVIDUAL (por colaboradora)
+  var METAS_IND={
+    'Etiquetagem':1500,'Revisão':1200,
+    'Linha / Embalagem':500,'Prensa Térmica':1200,'Trocas e Consertos':500
+  };
+
+  var res=calcMediaColabs();
+  // Excluir colaboradoras com menos de 2 dias
+  var dados=res.colabs.filter(function(d){return d.dias>=2;});
+  var mediasArea=res.mediasArea;
+  var dtI=document.getElementById('dtI').value||'';
+  var dtF=document.getElementById('dtF').value||'';
+  document.getElementById('mediaPopSub').textContent='Período: '+dtI+' → '+dtF+' · '+dados.length+' colaboradoras (≥2 dias)';
+  var body=document.getElementById('mediaPopBody');
+
+  // Seção: médias por área com meta
+  var areas=Object.keys(mediasArea).sort(function(a,b){return mediasArea[b]-mediasArea[a];});
+  body.innerHTML='<div style="font-size:10px;font-weight:800;color:var(--roxo);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Média por área</div>'
+    +'<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;">'
+    +areas.map(function(t){
+      var label=t.replace('Linha / Embalagem','Linha/Emb.').replace('Trocas e Consertos','Trocas').replace('Prensa Térmica','Prensa');
+      var meta=METAS_AREA[t]||0;
+      var pct=meta?Math.round(mediasArea[t]/meta*100):null;
+      var cor=pct>=100?'var(--ok)':pct>=80?'var(--warn)':'var(--bad)';
+      return '<div style="background:var(--lav-l);border-radius:10px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;">'
+        +'<div style="font-size:12px;font-weight:800;color:var(--txt);text-transform:uppercase;letter-spacing:.04em">'+label+'</div>'
+        +'<div style="display:flex;align-items:center;gap:16px;">'
+        +'<div style="text-align:right"><div style="font-size:16px;font-weight:800;color:var(--roxo)">'+n(mediasArea[t])+'</div><div style="font-size:9px;color:var(--txt-s)">média atual</div></div>'
+        +(meta?'<div style="text-align:right"><div style="font-size:16px;font-weight:800;color:'+cor+'">'+pct+'%</div><div style="font-size:9px;color:var(--txt-s)">meta: '+n(meta)+'</div></div>':'')
+        +'</div></div>';
+    }).join('')
+    +'</div>'
+    +'<div style="font-size:10px;font-weight:800;color:var(--roxo);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Por colaboradora</div>'
+    +'<div style="display:grid;grid-template-columns:1fr auto 90px 70px 50px 24px;gap:6px;padding:6px 0;border-bottom:1px solid var(--lav);font-size:10px;font-weight:700;color:var(--txt-s);text-transform:uppercase;letter-spacing:.04em;">'
+    +'<span>Nome</span><span>Área</span><span style="text-align:right">Média/dia</span><span style="text-align:right">Meta</span><span style="text-align:right">Dias</span><span></span></div>';
+
+  // Medalhas por área: ouro=supera meta, prata=>=80% meta, bronze=>=60% meta (1 por nível por área)
+  var medalhasArea={};
+  dados.forEach(function(d){
+    var meta=METAS_IND[d.tipoFull]||0;
+    if(!meta)return;
+    var pct=d.media/meta;
+    if(!medalhasArea[d.tipoFull]) medalhasArea[d.tipoFull]={ouro:false,prata:false,bronze:false};
+    var m=medalhasArea[d.tipoFull];
+    if(pct>=1.0 && !m.ouro){d.medalha='🥇';m.ouro=true;}
+    else if(pct>=0.8 && !m.prata){d.medalha='🥈';m.prata=true;}
+    else if(pct>=0.6 && !m.bronze){d.medalha='🥉';m.bronze=true;}
+    else{d.medalha='';}
+  });
+
+  dados.forEach(function(d){
+    var meta=METAS_IND[d.tipoFull]||0;
+    var pct=meta?Math.round(d.media/meta*100):null;
+    var corPct=pct===null?'':pct>=100?'color:var(--ok)':pct>=80?'color:var(--warn)':'color:var(--bad)';
+    body.innerHTML+='<div style="display:grid;grid-template-columns:1fr auto 90px 70px 50px 24px;gap:6px;padding:8px 0;border-bottom:1px solid var(--lav-l);font-size:12px;align-items:center;">'
+      +'<span style="font-weight:600;color:var(--txt)">'+d.col+'</span>'
+      +'<span style="font-size:10px;background:var(--lav-l);color:var(--roxo);padding:2px 7px;border-radius:8px;white-space:nowrap;font-weight:700;">'+d.tipo+'</span>'
+      +'<span style="text-align:right;font-weight:700;'+corPct+'">'+n(d.media)+(pct!==null?' <span style="font-size:9px">('+pct+'%)</span>':'')+'</span>'
+      +'<span style="text-align:right;color:var(--txt-s);font-size:11px">'+(meta?n(meta):'—')+'</span>'
+      +'<span style="text-align:right;color:var(--txt-s)">'+d.dias+'d</span>'
+      +'<span style="text-align:center;font-size:16px">'+(d.medalha||'')+'</span>'
+      +'</div>';
+  });
+  document.getElementById('mediaPopup').style.display='flex';
+  document.getElementById('mediaBkd').classList.add('active');
+}
+
+function fecharMediaProd(){
+  document.getElementById('mediaPopup').style.display='none';
+  document.getElementById('mediaBkd').classList.remove('active');
+}
+
+function atualizarInsightColab(){
+  var el=document.getElementById('insightColab');
+  if(!el) return;
+  if(colabsSelecionadas.size!==1){el.classList.remove('show');return;}
+  var nome=Array.from(colabsSelecionadas)[0];
+
+  // Calcular média por área separadamente para esta colaboradora
+  var porArea={};
+  filt.forEach(function(r){
+    if(r.col!==nome) return;
+    if(!porArea[r.tipo]) porArea[r.tipo]={total:0,dias:new Set()};
+    porArea[r.tipo].total+=r.tot;
+    porArea[r.tipo].dias.add(r.ds);
+  });
+
+  var areas=Object.keys(porArea);
+  if(!areas.length){el.classList.remove('show');return;}
+
+  var partes=areas.map(function(t){
+    var totalDias=porArea[t].dias.size||1;
+    var media=Math.round(porArea[t].total/totalDias);
+    var label=t.replace('Linha / Embalagem','Linha/Emb.').replace('Trocas e Consertos','Trocas').replace('Prensa Térmica','Prensa');
+    return '<strong>'+label+'</strong>: <strong>'+n(media)+'</strong> pç/dia ('+totalDias+'d)';
+  });
+
+  el.classList.add('show');
+  el.innerHTML='📈 <strong>'+nome+'</strong> — média por área: '+partes.join(' · ');
+}
+
 function renderTudo(){renderKPIs();renderProd();renderQual();}
 
 // ── KPIs — sempre usa todos os dados filtrados por data (sem filtro de tipo) ─
@@ -731,8 +910,16 @@ function renderKPIs(){
 // ── PRODUTIVIDADE ─────────────────────────────────────────────────────────────
 function renderProd(){
   var pd={};
-  // Sempre usa _base para ter todos os tipos no gráfico
-  var pdSrc=window._base||filt;
+  // Se exatamente 1 colaboradora selecionada, filtrar gráfico por ela
+  var pdSrc;
+  if(colabsSelecionadas.size===1){
+    var nomeColab=Array.from(colabsSelecionadas)[0];
+    pdSrc=(window._base||filt).filter(function(r){return r.col===nomeColab;});
+    document.getElementById('chartDiaLabel').dataset.colab=nomeColab;
+  } else {
+    pdSrc=window._base||filt;
+    document.getElementById('chartDiaLabel').dataset.colab='';
+  }
   pdSrc.forEach(function(r){
     if(!pd[r.ds])pd[r.ds]={lin:0,troc:0,etiq:0,pren:0,rev:0};
     if(r.tipo==='Linha / Embalagem')pd[r.ds].lin+=r.tot;
@@ -771,11 +958,11 @@ function renderProd(){
       {label:'Prensa',data:dias.map(function(d){return pd[d].pren;}),backgroundColor:'#7c3aed',stack:'p'},
       {label:'Revisão',type:'line',data:dias.map(function(d){return pd[d].rev;}),borderColor:'#AE76E5',backgroundColor:'rgba(174,118,229,.15)',tension:.4,fill:true,pointRadius:2,borderWidth:1.5}
     ];
-    document.getElementById('chartDiaLabel').textContent='todos os tipos';
+    document.getElementById('chartDiaLabel').textContent='todos os tipos'+(colabsSelecionadas.size===1?' — '+Array.from(colabsSelecionadas)[0]:'');
   }
 
-  var pluginBarLabels={id:'barLabels',afterDatasetsDraw:function(chart){var ctx2=chart.ctx;chart.data.datasets.forEach(function(ds,i){var meta=chart.getDatasetMeta(i);if(ds.type==='line'||meta.hidden)return;meta.data.forEach(function(bar,j){var v=ds.data[j];if(!v||v<10)return;ctx2.save();ctx2.fillStyle='rgba(255,255,255,0.9)';ctx2.font='bold 9px sans-serif';ctx2.textAlign='center';ctx2.textBaseline='middle';var x=bar.x,y=bar.y+(bar.height||20)/2;ctx2.fillText(n(v),x,y);ctx2.restore();});});}};
-  var pluginLineLabels={id:'lineLabels',afterDatasetsDraw:function(chart){var ctx2=chart.ctx;chart.data.datasets.forEach(function(ds,i){if(ds.type!=='line')return;var meta=chart.getDatasetMeta(i);if(meta.hidden)return;meta.data.forEach(function(pt,j){var v=ds.data[j];if(!v||v<1)return;ctx2.save();ctx2.fillStyle='#592C95';ctx2.font='bold 10px sans-serif';ctx2.textAlign='center';ctx2.textBaseline='bottom';ctx2.fillText(n(v),pt.x,pt.y-6);ctx2.restore();});});}};
+  var pluginBarLabels={id:'barLabels',afterDatasetsDraw:function(chart){var ctx2=chart.ctx;chart.data.datasets.forEach(function(ds,i){var meta=chart.getDatasetMeta(i);if(ds.type==='line'||meta.hidden)return;meta.data.forEach(function(bar,j){var v=ds.data[j];if(!v||v<80)return;ctx2.save();ctx2.fillStyle='rgba(255,255,255,0.9)';ctx2.font='bold 8px sans-serif';ctx2.textAlign='center';ctx2.textBaseline='middle';var x=bar.x,y=bar.y+(bar.height||20)/2;ctx2.fillText(n(v),x,y);ctx2.restore();});});}};
+  var pluginLineLabels={id:'lineLabels',afterDatasetsDraw:function(chart){var ctx2=chart.ctx;chart.data.datasets.forEach(function(ds,i){if(ds.type!=='line')return;var meta=chart.getDatasetMeta(i);if(meta.hidden)return;meta.data.forEach(function(pt,j){var v=ds.data[j];if(!v||v<100)return;ctx2.save();ctx2.fillStyle='#592C95';ctx2.font='bold 9px sans-serif';ctx2.textAlign='center';ctx2.textBaseline='bottom';ctx2.fillText(n(v),pt.x,pt.y-6);ctx2.restore();});});}};
   charts.dia=new Chart(ctx,{type:'bar',data:{labels:dias.map(fb),datasets:datasets},plugins:[pluginBarLabels,pluginLineLabels],
     options:{responsive:true,maintainAspectRatio:false,
     plugins:{legend:{display:false}},
@@ -861,6 +1048,7 @@ function toggleComp(nome,cb){
     colabsSelecionadas.delete(nome);
   }
   renderProd();
+  if(typeof atualizarInsightColab==='function') atualizarInsightColab();
 }
 
 function limparComp(){
@@ -932,22 +1120,42 @@ function gerarInsightComp(nomes, porCol, dias){
     var p1=vals.slice(0,meio).reduce(function(s,v){return s+v;},0);
     var p2=vals.slice(meio).reduce(function(s,v){return s+v;},0);
     var tend=p2>p1?'crescente':p2<p1?'decrescente':'estável';
-    return{nm:nm,tot:tot,media:media,tend:tend};
+    return{nm:nm,tot:tot,media:media,tend:tend,diasAtivos:diasAtivos};
   });
   stats.sort(function(a,b){return b.tot-a.tot;});
   var lider=stats[0];
+
+  // Média geral do grupo
+  var mediaGeral=Math.round(stats.reduce(function(s,r){return s+(r.media||0);},0)/stats.length);
+
   var insights=[];
-  insights.push('<strong>'+lider.nm+'</strong> lidera com <strong>'+n(lider.tot)+'</strong> peças no período');
+  insights.push('<strong>'+lider.nm+'</strong> lidera com <strong>'+n(lider.tot)+'</strong> peças ('+n(lider.media)+' pç/dia em '+lider.diasAtivos+' dia(s) ativo)');
   stats.forEach(function(s,i){
     if(i===0)return;
     var diff=lider.tot-s.tot;
     var pct2=lider.tot?((diff/lider.tot)*100).toFixed(0):0;
-    insights.push('<strong>'+s.nm+'</strong> produziu '+pct2+'% a menos ('+n(diff)+' peças de diferença)');
+    insights.push('<strong>'+s.nm+'</strong> produziu '+pct2+'% a menos ('+n(diff)+' pçs de diferença)');
   });
   // Tendências
   stats.forEach(function(s){
     var emoji=s.tend==='crescente'?'📈':s.tend==='decrescente'?'📉':'➡️';
-    insights.push(emoji+' <strong>'+s.nm+'</strong>: tendência <strong>'+s.tend+'</strong> (média '+n(s.media)+' pç/dia ativo)');
+    insights.push(emoji+' <strong>'+s.nm+'</strong>: tendência <strong>'+s.tend+'</strong> ('+n(s.media)+' pç/dia em '+s.diasAtivos+'d)');
+  });
+  // Análise especial: colaboradoras em teste (5 dias ou menos no período)
+  var emTeste=stats.filter(function(s){return s.diasAtivos<=5;});
+  emTeste.forEach(function(s){
+    var rel=mediaGeral>0?s.media/mediaGeral:0;
+    var classif,emoji2;
+    if(rel>=0.9){classif='performance acima da média esperada';emoji2='🌟';}
+    else if(rel>=0.7){classif='performance dentro da média esperada';emoji2='✅';}
+    else if(rel>=0.5){classif='performance em desenvolvimento';emoji2='🔶';}
+    else{classif='ainda abaixo da média esperada';emoji2='⚠️';}
+    var pctRel=Math.round(rel*100);
+    var obs=rel>=0.9?'Resultado expressivo para o tempo de casa — atenção ao potencial desta colaboradora.':
+            rel>=0.7?'Resultado consistente para o período de adaptação.':
+            'Recomendável acompanhar a evolução nos próximos dias.';
+    insights.push(emoji2+' <strong>'+s.nm+'</strong> está há apenas <strong>'+s.diasAtivos+' dia(s)</strong> na área — '
+      +classif+' ('+pctRel+'% da média do grupo). '+obs);
   });
   el.innerHTML='<div style="font-size:10px;font-weight:700;color:var(--roxo);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">💡 Análise</div>'
     +insights.map(function(i){return '<div style="font-size:12px;color:var(--txt);padding:4px 0;border-bottom:1px solid var(--lav-l)">'+i+'</div>';}).join('');
