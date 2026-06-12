@@ -75,6 +75,9 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.7;
 .tarr{font-size:11px;width:14px;text-align:center;flex-shrink:0;}
 .tarr.up{color:var(--ok);}
 .tarr.dn{color:var(--bad);}
+.perf-area-tab{padding:11px 18px;border:none;background:transparent;font-size:12px;font-weight:700;cursor:pointer;color:var(--txt-s);transition:all .15s;white-space:nowrap;}
+.perf-area-tab:hover{background:var(--lav-l);color:var(--roxo);}
+.perf-area-tab.active{background:var(--roxo);color:#fff;}
 /* COMPARATIVO */
 .comp-panel{display:none;background:#fff;border-radius:12px;border:2px solid var(--lav);padding:16px 18px;margin-top:12px;box-shadow:0 4px 16px rgba(89,44,149,.1);}
 .comp-panel.show{display:block;}
@@ -210,6 +213,7 @@ td.mn{font-family:monospace;font-size:11px;color:var(--txt-s);}
       <button class="pbtn" onclick="setPer(0)">Tudo</button>
       <button class="abtn" onclick="aplicar()">Aplicar</button>
       <button class="ubtn" onclick="carregarDados(true)">↺ Atualizar</button>
+      <button class="pbtn" id="btnSoFixos" onclick="toggleSoFixos()" title="Mostrar apenas colaboradoras FIXAS na aba Performance">🏠 Só FIXOS</button>
     </div>
   </div>
 
@@ -272,6 +276,7 @@ td.mn{font-family:monospace;font-size:11px;color:var(--txt-s);}
     <button class="tab active" onclick="goTab('prod',this)">📊 Produtividade</button>
     <button class="tab" onclick="goTab('qual',this)">⚠️ Qualidade</button>
     <button class="tab" onclick="goTab('falhas',this)">🔍 Controle de Falhas</button>
+    <button class="tab" onclick="goTab('perf',this)">⭐ Performance Individual</button>
   </div>
 
   <div class="tc active" id="tab-prod">
@@ -288,6 +293,8 @@ td.mn{font-family:monospace;font-size:11px;color:var(--txt-s);}
         </div>
         <div id="insightColab" class="insight-colab"></div>
         <div style="margin-top:16px;">
+          <!-- Filtros de área para o ranking -->
+          <div id="teamAreaFiltros" style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px;"></div>
           <div class="team-hdr">
             <span>Colaboradora — total do período</span>
             <span style="display:flex;align-items:center;gap:8px;">
@@ -375,33 +382,34 @@ td.mn{font-family:monospace;font-size:11px;color:var(--txt-s);}
   <!-- TAB CONTROLE DE FALHAS -->
   <div class="tc" id="tab-falhas">
     <div class="card" style="margin-bottom:14px;">
-      <div class="ct">🔍 Rastreabilidade de Peças <span>filtre por qualquer combinação — resultado em tempo real</span></div>
+      <div class="ct">🔍 Rastreabilidade de Peças <span>preencha os filtros e clique em Buscar</span></div>
       <div style="background:#FEF3C7;border:1px solid #F59E0B;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#854F0B;">
         ⚠️ <strong>Atenção:</strong> Esta rastreabilidade é indicativa. Identifica colaboradoras que processaram o item no período, mas não garante que seja exatamente a peça com defeito.
       </div>
       <div style="display:grid;grid-template-columns:repeat(3,1fr) repeat(2,1fr);gap:10px;margin-bottom:12px;">
         <div>
           <label style="font-size:10px;font-weight:700;color:var(--txt-s);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:4px;">Facção</label>
-          <input type="text" id="rfFac" placeholder="Ex: CKL, VITÓRIA..." oninput="renderFalhas()" style="width:100%;padding:8px 12px;border:1px solid var(--brd);border-radius:8px;font-size:13px;font-family:inherit;outline:none;color:var(--txt);">
+          <input type="text" id="rfFac" onkeydown="if(event.key==='Enter')renderFalhas()" placeholder="Ex: CKL, VITÓRIA..." style="width:100%;padding:8px 12px;border:1px solid var(--brd);border-radius:8px;font-size:13px;font-family:inherit;outline:none;color:var(--txt);">
         </div>
         <div>
           <label style="font-size:10px;font-weight:700;color:var(--txt-s);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:4px;">O.S.</label>
-          <input type="text" id="rfOS" placeholder="Ex: 1856A..." oninput="renderFalhas()" style="width:100%;padding:8px 12px;border:1px solid var(--brd);border-radius:8px;font-size:13px;font-family:inherit;outline:none;color:var(--txt);">
+          <input type="text" id="rfOS" onkeydown="if(event.key==='Enter')renderFalhas()" placeholder="Ex: 1856A..." style="width:100%;padding:8px 12px;border:1px solid var(--brd);border-radius:8px;font-size:13px;font-family:inherit;outline:none;color:var(--txt);">
         </div>
         <div>
           <label style="font-size:10px;font-weight:700;color:var(--txt-s);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:4px;">Modelo</label>
-          <input type="text" id="rfMod" placeholder="Ex: ALISON, MIA..." oninput="renderFalhas()" style="width:100%;padding:8px 12px;border:1px solid var(--brd);border-radius:8px;font-size:13px;font-family:inherit;outline:none;color:var(--txt);">
+          <input type="text" id="rfMod" onkeydown="if(event.key==='Enter')renderFalhas()" placeholder="Ex: ALISON, MIA..." style="width:100%;padding:8px 12px;border:1px solid var(--brd);border-radius:8px;font-size:13px;font-family:inherit;outline:none;color:var(--txt);">
         </div>
         <div>
           <label style="font-size:10px;font-weight:700;color:var(--txt-s);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:4px;">Cor</label>
-          <input type="text" id="rfCor" placeholder="Ex: PRETO..." oninput="renderFalhas()" style="width:100%;padding:8px 12px;border:1px solid var(--brd);border-radius:8px;font-size:13px;font-family:inherit;outline:none;color:var(--txt);">
+          <input type="text" id="rfCor" onkeydown="if(event.key==='Enter')renderFalhas()" placeholder="Ex: PRETO..." style="width:100%;padding:8px 12px;border:1px solid var(--brd);border-radius:8px;font-size:13px;font-family:inherit;outline:none;color:var(--txt);">
         </div>
         <div>
           <label style="font-size:10px;font-weight:700;color:var(--txt-s);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:4px;">Tamanho</label>
-          <input type="text" id="rfTam" placeholder="Ex: P, M, G..." oninput="renderFalhas()" style="width:100%;padding:8px 12px;border:1px solid var(--brd);border-radius:8px;font-size:13px;font-family:inherit;outline:none;color:var(--txt);">
+          <input type="text" id="rfTam" onkeydown="if(event.key==='Enter')renderFalhas()" placeholder="Ex: P, M, G..." style="width:100%;padding:8px 12px;border:1px solid var(--brd);border-radius:8px;font-size:13px;font-family:inherit;outline:none;color:var(--txt);">
         </div>
       </div>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+        <button onclick="renderFalhas()" style="padding:7px 20px;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;background:var(--roxo);color:#fff;">🔍 Buscar</button>
         <button onclick="limparFalhas()" style="padding:7px 14px;border:1px solid var(--brd);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;background:#fff;color:var(--roxo);">✕ Limpar filtros</button>
         <div id="rfResumo" style="font-size:12px;color:var(--txt-s);"></div>
       </div>
@@ -431,7 +439,38 @@ td.mn{font-family:monospace;font-size:11px;color:var(--txt-s);}
   <div id="mediaPopBody"></div>
 </div>
 
-<div class="footer"><strong>Pangeia 96</strong> · Dashboard de Produtividade — Acabamento</div>
+  <div class="tc" id="tab-perf">
+
+    <!-- BUSCA POR MODELO -->
+    <div style="background:#fff;border:1px solid var(--brd);border-radius:10px;margin-bottom:12px;overflow:hidden;">
+      <div style="display:flex;gap:8px;align-items:center;padding:8px 12px;">
+        <span style="font-size:13px;">🔍</span>
+        <input id="buscaModelo" type="text" placeholder="Buscar modelo — ex: ALBA, JESSI, STELLA..." style="flex:1;border:none;outline:none;font-size:12px;font-family:inherit;color:var(--txt);" oninput="buscarPorModelo(this.value)">
+        <button onclick="document.getElementById('buscaModelo').value='';document.getElementById('resultBuscaModelo').style.display='none';" style="background:none;border:none;cursor:pointer;color:var(--txt-s);font-size:16px;">✕</button>
+      </div>
+      <div style="display:flex;gap:4px;padding:6px 12px;border-top:1px solid var(--lav-l);flex-wrap:wrap;" id="buscaAreaFiltros">
+        <button class="baf-btn active" data-area="Todos" onclick="setBuscaArea(this)" style="font-size:11px;padding:3px 10px;border-radius:20px;border:1px solid var(--brd);background:var(--roxo);color:#fff;cursor:pointer;font-weight:700;">Todos</button>
+        <button class="baf-btn" data-area="Etiquetagem" onclick="setBuscaArea(this)" style="font-size:11px;padding:3px 10px;border-radius:20px;border:1px solid var(--brd);background:#fff;color:var(--txt);cursor:pointer;">🏷️ Etiquetagem</button>
+        <button class="baf-btn" data-area="Linha / Embalagem" onclick="setBuscaArea(this)" style="font-size:11px;padding:3px 10px;border-radius:20px;border:1px solid var(--brd);background:#fff;color:var(--txt);cursor:pointer;">📦 Linha/Emb.</button>
+        <button class="baf-btn" data-area="Prensa Térmica" onclick="setBuscaArea(this)" style="font-size:11px;padding:3px 10px;border-radius:20px;border:1px solid var(--brd);background:#fff;color:var(--txt);cursor:pointer;">♨️ Prensa</button>
+        <button class="baf-btn" data-area="Revisão" onclick="setBuscaArea(this)" style="font-size:11px;padding:3px 10px;border-radius:20px;border:1px solid var(--brd);background:#fff;color:var(--txt);cursor:pointer;">🔍 Revisão</button>
+        <button class="baf-btn" data-area="Trocas e Consertos" onclick="setBuscaArea(this)" style="font-size:11px;padding:3px 10px;border-radius:20px;border:1px solid var(--brd);background:#fff;color:var(--txt);cursor:pointer;">🔧 Trocas</button>
+      </div>
+    </div>
+    <div id="resultBuscaModelo" style="display:none;margin-bottom:14px;"></div>
+    <div style="display:flex;gap:0;border-radius:12px;overflow:hidden;border:1px solid var(--brd);margin-bottom:16px;background:#fff;" id="perfAreaTabs">
+      <!-- preenchido por JS -->
+    </div>
+
+    <!-- CONTEÚDO: VISÃO GERAL (padrão) ou DETALHE DE ÁREA -->
+    <div id="perfMainContent"></div>
+
+    <!-- OVERLAY DE DETALHE INDIVIDUAL -->
+    <div id="perfDetalhe" style="display:none;"></div>
+
+  </div>
+
+  <div class="footer"><strong>Pangeia 96</strong> · Dashboard de Produtividade — Acabamento</div>
 </div>
 
 <div class="fbk" id="fbk" onclick="fecharSubPopup();fecharTodos()"></div>
@@ -462,8 +501,8 @@ td.mn{font-family:monospace;font-size:11px;color:var(--txt-s);}
   <button class="fx" onclick="fechar('fcDia')">×</button>
   <div class="fh"><div class="av dia" id="fdAv">—</div><div><div class="fn" id="fdNm">—</div><div class="fs" id="fdSb">—</div></div></div>
   <div class="fk c3">
-    <div class="fki"><div class="fkl">Acabamento</div><div class="fkv" id="fdPr">—</div></div>
-    <div class="fki"><div class="fkl">Revisão</div><div class="fkv" style="color:var(--c-rev)" id="fdRv">—</div></div>
+    <div class="fki"><div class="fkl" id="fdPrLbl">Acabamento</div><div class="fkv" id="fdPr">—</div></div>
+    <div class="fki"><div class="fkl" id="fdRvLbl">Revisão</div><div class="fkv" style="color:var(--c-rev)" id="fdRv">—</div></div>
     <div class="fki"><div class="fkl">Modelos</div><div class="fkv" id="fdMc">—</div></div>
   </div>
   <div class="dia-grid">
@@ -492,6 +531,9 @@ td.mn{font-family:monospace;font-size:11px;color:var(--txt-s);}
 <script>
 var SCRIPT_URL="https://script.google.com/macros/s/AKfycbx3ApxHLtMoHFdm28uS0InVQ4pX8v67LoDYuS5u6brmqv1EaUDPLjjopeVKp8t_wB0/exec";
 var TIPOS_ACAB=['Linha / Embalagem','Trocas e Consertos'];
+// Mapa COLABORADORA → {contratacao: 'FIXO'|'TESTE', complexidade: ...}
+var _tiposColab={};
+var _perfCompSet=new Set(); // colaboradoras selecionadas para comparar na aba perf
 var TODOS_PROD=['Linha / Embalagem','Trocas e Consertos','Etiquetagem','Prensa Térmica'];
 var TIPO_REV='Revisão';
 var CORES_COMP=['#592C95','#1D9E75','#E24B4A','#EF9F27','#0891b2','#7c3aed','#185FA5','#db2777'];
@@ -502,12 +544,82 @@ var filtroTipoAtivo=null;
 var colabsSelecionadas=new Set();
 
 window.addEventListener('load',function(){
+  // Delegação de clique para ficha do colaborador (data-col/data-area)
+  document.addEventListener('click', function(e){
+    var btn = e.target.closest('.ficha-btn');
+    if(!btn) return;
+    e.stopPropagation();
+    var col = btn.getAttribute('data-col');
+    var area = btn.getAttribute('data-area');
+    if(col && area) abrirFichaColab(col, area);
+  });
   var h=new Date(),h30=new Date();
   h30.setDate(h30.getDate()-30);
   document.getElementById('dtF').value=fd(h);
   document.getElementById('dtI').value=fd(h30);
-  carregarDados(false); // usa cache se disponível
+  carregarDados(false);
+  carregarListas();
+
+  // Auto-refresh a cada 10 minutos
+  var AUTO_REFRESH_MS = 10 * 60 * 1000;
+  var _proximaAtualizacao = Date.now() + AUTO_REFRESH_MS;
+
+  setInterval(function(){
+    carregarDados(true);
+    _proximaAtualizacao = Date.now() + AUTO_REFRESH_MS;
+  }, AUTO_REFRESH_MS);
+
+  // Contador regressivo no botão ↺ Atualizar
+  setInterval(function(){
+    var btn = document.querySelector('.ubtn');
+    if(!btn) return;
+    var restam = Math.max(0, Math.round((_proximaAtualizacao - Date.now()) / 1000));
+    var min = Math.floor(restam / 60);
+    var seg = restam % 60;
+    btn.title = 'Auto-refresh em ' + min + ':' + (seg<10?'0':'') + seg;
+    if(restam <= 30) btn.style.opacity = '0.7';
+    else btn.style.opacity = '1';
+  }, 5000);
 });
+
+function carregarListas(){
+  fetch(SCRIPT_URL+'?t='+Date.now())
+    .then(function(r){return r.json();})
+    .then(function(data){
+      // Colaboradoras com tipo contratação (col D = nome, col E = tipo)
+      _tiposColab={};
+      if(data.colabsInfo){
+        data.colabsInfo.forEach(function(ci){
+          if(ci.nome) _tiposColab[ci.nome.toUpperCase().trim()]={
+            contratacao:(ci.contratacao||'').toUpperCase().trim(),
+            areaPrincipal:(ci.areaPrincipal||'').trim()
+          };
+        });
+      }
+      // Popular select de performance
+      var sel=document.getElementById('perfColab');
+      if(sel&&data.colaboradoras){
+        sel.innerHTML='<option value="">— Selecione uma colaboradora —</option>';
+        data.colaboradoras.forEach(function(nm){
+          sel.innerHTML+='<option value="'+nm+'">'+nm+'</option>';
+        });
+      }
+      // Mapa de complexidade dos modelos
+      window._complexMap = {};
+      if(data.complexidadeModelos){
+        Object.keys(data.complexidadeModelos).forEach(function(mod){
+          // Normaliza: travessão — e hífen - tratados como mesmo separador
+          var chave = mod.toUpperCase().trim().replace(/\s*[—\-]\s*/g,' - ');
+          window._complexMap[chave] = (data.complexidadeModelos[mod]||'').toUpperCase().trim();
+        });
+      }
+      // Se aba Performance estiver ativa, re-renderiza com FIXO/TESTE agora disponíveis
+      var tabPerf = document.getElementById('tab-perf');
+      if(tabPerf && tabPerf.classList.contains('active')){
+        renderPerfMainContent();
+      }
+    }).catch(function(){});
+}
 
 function fd(d){return d.toISOString().split('T')[0];}
 function fb(s){if(!s)return'—';var p=s.split('-');return p[2]+'/'+p[1];}
@@ -729,6 +841,8 @@ function calcMediaColabs(){
 }
 
 function abrirMediaProd(){
+  // Limpar filtro ao abrir pela primeira vez
+  if(window._mediaAreaFiltro===undefined) window._mediaAreaFiltro='';
   // Metas base por área
   // Meta de ÁREA (média esperada da equipe toda)
   var METAS_AREA={
@@ -743,7 +857,10 @@ function abrirMediaProd(){
 
   var res=calcMediaColabs();
   // Excluir colaboradoras com menos de 2 dias
-  var dados=res.colabs.filter(function(d){return d.dias>=2;});
+  var areaFiltroMedia=window._mediaAreaFiltro||'';
+  var dados=res.colabs.filter(function(d){
+    return d.dias>=2 && (areaFiltroMedia===''||d.tipoFull===areaFiltroMedia);
+  });
   var mediasArea=res.mediasArea;
   var dtI=document.getElementById('dtI').value||'';
   var dtF=document.getElementById('dtF').value||'';
@@ -759,11 +876,12 @@ function abrirMediaProd(){
       var meta=METAS_AREA[t]||0;
       var pct=meta?Math.round(mediasArea[t]/meta*100):null;
       var cor=pct>=100?'var(--ok)':pct>=80?'var(--warn)':'var(--bad)';
-      return '<div style="background:var(--lav-l);border-radius:10px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;">'
-        +'<div style="font-size:12px;font-weight:800;color:var(--txt);text-transform:uppercase;letter-spacing:.04em">'+label+'</div>'
+      var isAtivo=(filtroTipoAtivo===t)||(t==='Linha / Embalagem'&&filtroTipoAtivo==='__ACAB__');
+      return '<div style="background:'+(isAtivo?'var(--roxo)':'var(--lav-l)')+';border-radius:10px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="filtrarMediaPorArea(\''+t+'\')">'
+        +'<div style="font-size:12px;font-weight:800;color:'+(isAtivo?'#fff':'var(--txt)')+';text-transform:uppercase;letter-spacing:.04em">'+label+(isAtivo?' ✓':'')+'</div>'
         +'<div style="display:flex;align-items:center;gap:16px;">'
-        +'<div style="text-align:right"><div style="font-size:16px;font-weight:800;color:var(--roxo)">'+n(mediasArea[t])+'</div><div style="font-size:9px;color:var(--txt-s)">média atual</div></div>'
-        +(meta?'<div style="text-align:right"><div style="font-size:16px;font-weight:800;color:'+cor+'">'+pct+'%</div><div style="font-size:9px;color:var(--txt-s)">meta: '+n(meta)+'</div></div>':'')
+        +'<div style="text-align:right"><div style="font-size:16px;font-weight:800;color:'+(isAtivo?'#fff':'var(--roxo)')+'">'+n(mediasArea[t])+'</div><div style="font-size:9px;color:'+(isAtivo?'rgba(255,255,255,.7)':'var(--txt-s)')+'">média atual</div></div>'
+        +(meta?'<div style="text-align:right"><div style="font-size:16px;font-weight:800;color:'+cor+'">'+pct+'%</div><div style="font-size:9px;color:'+(isAtivo?'rgba(255,255,255,.7)':'var(--txt-s)')+'">meta: '+n(meta)+'</div></div>':'')
         +'</div></div>';
     }).join('')
     +'</div>'
@@ -802,9 +920,22 @@ function abrirMediaProd(){
   document.getElementById('mediaBkd').classList.add('active');
 }
 
+
+function filtrarMediaPorArea(area){
+  // Toggle: se já filtrado, limpar; senão, filtrar
+  if(window._mediaAreaFiltro===area){
+    window._mediaAreaFiltro='';
+  } else {
+    window._mediaAreaFiltro=area;
+  }
+  // Re-renderizar o conteúdo do card sem fechar
+  abrirMediaProd();
+}
+
 function fecharMediaProd(){
   document.getElementById('mediaPopup').style.display='none';
   document.getElementById('mediaBkd').classList.remove('active');
+  window._mediaAreaFiltro='';
 }
 
 function atualizarInsightColab(){
@@ -836,7 +967,13 @@ function atualizarInsightColab(){
   el.innerHTML='📈 <strong>'+nome+'</strong> — média por área: '+partes.join(' · ');
 }
 
-function renderTudo(){renderKPIs();renderProd();renderQual();}
+function renderTudo(){
+  renderKPIs();renderProd();renderQual();
+  var perfTab=document.getElementById('tab-perf');
+  if(perfTab&&perfTab.classList.contains('active')){
+    iniciarPerfArea();renderPerfMainContent();
+  }
+}
 
 // ── KPIs — sempre usa todos os dados filtrados por data (sem filtro de tipo) ─
 function renderKPIs(){
@@ -911,13 +1048,15 @@ function renderKPIs(){
 function renderProd(){
   var pd={};
   // Se exatamente 1 colaboradora selecionada, filtrar gráfico por ela
+  // Gráfico diário sempre usa base completa (FIXO+TESTE) — reflete produção real da operação
+  var baseProd = window._base || filt;
   var pdSrc;
   if(colabsSelecionadas.size===1){
     var nomeColab=Array.from(colabsSelecionadas)[0];
-    pdSrc=(window._base||filt).filter(function(r){return r.col===nomeColab;});
+    pdSrc=baseProd.filter(function(r){return r.col===nomeColab;});
     document.getElementById('chartDiaLabel').dataset.colab=nomeColab;
   } else {
-    pdSrc=window._base||filt;
+    pdSrc=baseProd;
     document.getElementById('chartDiaLabel').dataset.colab='';
   }
   pdSrc.forEach(function(r){
@@ -928,7 +1067,9 @@ function renderProd(){
     else if(r.tipo==='Prensa Térmica')pd[r.ds].pren+=r.tot;
     else if(r.tipo===TIPO_REV)pd[r.ds].rev+=r.tot;
   });
-  var dias=Object.keys(pd).sort().slice(-20);
+  var _todosOsDias=Object.keys(pd).sort();
+  // Mostrar todos os dias do período; limite de 60 apenas para evitar gráfico ilegível
+  var dias=_todosOsDias.slice(-60);
 
   if(charts.dia)charts.dia.destroy();
   var ctx=document.getElementById('chartDia').getContext('2d');
@@ -968,9 +1109,16 @@ function renderProd(){
     plugins:{legend:{display:false}},
     scales:{x:{stacked:true,ticks:{font:{size:10}}},y:{stacked:false,ticks:{font:{size:10}}}}}});
 
-  // Ranking colaboradoras
+  // Ranking colaboradoras — lê filtro de área se houver
+  var _areaFiltroRanking=(function(){
+    var div=document.getElementById('teamAreaFiltros');
+    return div?div.dataset.area||'':'';
+  })();
+  var _baseProd = baseFiltrada();
+  var _filtRanking=_areaFiltroRanking?_baseProd.filter(function(r){return r.tipo===_areaFiltroRanking;}):_baseProd;
+
   var pc={};
-  filt.forEach(function(r){
+  _filtRanking.forEach(function(r){
     if(!pc[r.col])pc[r.col]={tot:0,mods:{},oss:new Set(),tipos:{}};
     pc[r.col].tot+=r.tot;
     if(!pc[r.col].mods[r.mod])pc[r.col].mods[r.mod]=0;
@@ -1009,9 +1157,33 @@ function renderProd(){
   // Guarda pc para uso no onclick inline
   window.pc=pc;
 
+  // Botões de filtro por área (acima do ranking) — reconstruir a cada render
+  (function(){
+    var div=document.getElementById('teamAreaFiltros');
+    if(!div) return;
+    var areasPresentes={};
+    filt.forEach(function(r){ areasPresentes[r.tipo]=true; });
+    var areasArr=Object.keys(areasPresentes).sort();
+    var filtroAtual=_areaFiltroRanking;
+    div.innerHTML='';
+    var ICAL={'Revisão':'🔍','Linha / Embalagem':'📦','Trocas e Consertos':'🔧','Etiquetagem':'🏷️','Prensa Térmica':'♨️'};
+    var ALBL={'Revisão':'Revisão','Linha / Embalagem':'Linha/Emb.','Trocas e Consertos':'Trocas','Etiquetagem':'Etiquetagem','Prensa Térmica':'Prensa'};
+    function mkBtn(label, area){
+      var btn=document.createElement('button');
+      var isAt=(filtroAtual===area);
+      btn.style.cssText='padding:4px 10px;border:1px solid '+(isAt?'var(--roxo)':'var(--brd)')+';border-radius:16px;font-size:10px;font-weight:700;cursor:pointer;'
+        +'background:'+(isAt?'var(--roxo)':'#fff')+';color:'+(isAt?'#fff':'var(--txt-s)')+';white-space:nowrap;transition:all .12s;';
+      btn.textContent=label;
+      btn.onclick=(function(a){return function(){div.dataset.area=a;renderProd();};})(area);
+      div.appendChild(btn);
+    }
+    mkBtn('Todos','');
+    areasArr.forEach(function(a){ mkBtn((ICAL[a]||'')+' '+(ALBL[a]||a),a); });
+  })();
+
   // Tabela MCT
   var mct={};var totMCT=0;
-  filt.filter(function(r){return TIPOS_ACAB.indexOf(r.tipo)>=0;}).forEach(function(r){
+  baseFiltrada().filter(function(r){return TIPOS_ACAB.indexOf(r.tipo)>=0;}).forEach(function(r){
     var k=r.mod+'||'+r.cor+'||'+r.tam;
     if(!mct[k])mct[k]={mod:r.mod,cor:r.cor,tam:r.tam,tot:0};
     mct[k].tot+=r.tot;totMCT+=r.tot;
@@ -1021,9 +1193,9 @@ function renderProd(){
   ['fMod','fCor','fTam'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   filtMCT();
 
-  // Histórico
-  var dh=Object.keys(pd).sort().reverse().slice(0,12);
-  var th=dh.map(function(d){return pd[d].lin+pd[d].troc;});
+  // Histórico — todos os dias do período filtrado (mais recentes primeiro)
+  var dh=Object.keys(pd).sort().reverse();
+  var th=dh.map(function(d){return (pd[d].lin||0)+(pd[d].troc||0);});
   var mh=th.length?th.reduce(function(s,v){return s+v;},0)/th.length:0;
   var hl=document.getElementById('histList');hl.innerHTML='';
   dh.forEach(function(d,i){
@@ -1073,7 +1245,7 @@ function renderComp(){
   // Dados por dia por colaboradora
   var allDays={};
   filt.forEach(function(r){allDays[r.ds]=true;});
-  var dias=Object.keys(allDays).sort().slice(-20);
+  var dias=Object.keys(allDays).sort();
 
   var porCol={};
   nomes.forEach(function(nm){porCol[nm]={};dias.forEach(function(d){porCol[nm][d]=0;});});
@@ -1168,7 +1340,7 @@ function toggleCompNome(nome){
 
 // ── QUALIDADE ─────────────────────────────────────────────────────────────────
 function renderQual(){
-  var base=window._base||filt;
+  var base=baseFiltrada();
   var rq=base.filter(function(r){return r.tipo===TIPO_REV;});
   var tot=rq.reduce(function(s,r){return s+r.tot;},0);
   var baz=rq.reduce(function(s,r){return s+r.baz;},0);
@@ -1357,14 +1529,38 @@ function abrirDia(e,ds,dd){
    ['Etiquetagem',dd.etiq||0],['Prensa Térmica',dd.pren||0],['Revisão',dd.rev||0]]
   .filter(function(t){return t[1]>0;})
   .forEach(function(t){
-    tp.innerHTML+='<div class="dtr"><span style="font-weight:600;color:var(--txt)">'+t[0]+'</span>'
-      +'<span style="font-weight:700;color:var(--roxo)">'+n(t[1])+'</span></div>';
+    var div=document.createElement('div');
+    div.className='dtr';
+    div.dataset.tipo=t[0];
+    div.style.cursor='pointer';
+    div.style.borderRadius='6px';
+    div.style.padding='5px 4px';
+    div.style.margin='0 -4px';
+    var isAtivo=false;
+    div.innerHTML='<span style="font-weight:600;color:'+(isAtivo?'var(--roxo)':'var(--txt)')+'">'+t[0]+(isAtivo?' ✓':'')+'</span>'
+      +'<span style="font-weight:700;color:var(--roxo)">'+n(t[1])+'</span>';
+    div.onmouseenter=function(){this.style.background='var(--lav-l)';};
+    div.onmouseleave=function(){this.style.background='';};
+    div.onclick=(function(tipo){return function(e){
+      e.stopPropagation();
+      // Filtra colaboradores e modelos DENTRO do card, sem fechar
+      filtrarDentroDoCard(ds, tipo);
+    };})(t[0]);
+    tp.appendChild(div);
   });
 
   var mods={},cols={};
   // Guardar registros detalhados do dia para sub-popup
   window._diaDS=ds;
+  window._diaDd=dd;
   window._diaRecs=filt.filter(function(r){return r.ds===ds;});
+  // Reset labels superiores
+  var lA2=document.getElementById('fdPrLbl');
+  var lR2=document.getElementById('fdRvLbl');
+  var vR2=document.getElementById('fdRv');
+  if(lA2) lA2.textContent='Acabamento';
+  if(lR2) lR2.textContent='Revisão';
+  if(vR2) vR2.style.color='var(--c-rev)';
   filt.forEach(function(r){
     if(r.ds!==ds)return;
     if(!cols[r.col])cols[r.col]={tot:0,tipos:{}};
@@ -1484,6 +1680,95 @@ function abrirSubColab(nomeColab,e){
   abrirSubPopup(e);
 }
 
+
+// Filtra colaboradores e modelos dentro do card flutuante do dia
+function filtrarDentroDoCard(ds, tipoFiltro){
+  // Atualizar estado visual dos itens de tipo
+  var tp=document.getElementById('fdTp');
+  if(tp) tp.querySelectorAll('.dtr').forEach(function(d){
+    var span=d.querySelector('span:first-child');
+    if(!span) return;
+    var t=d.dataset.tipo;
+    var isAtivo=(tipoFiltro===t);
+    d.style.background=isAtivo?'var(--lav)':'';
+    d.style.borderRadius='6px';
+    span.style.color=isAtivo?'var(--roxo)':'var(--txt)';
+    span.style.fontWeight=isAtivo?'800':'600';
+  });
+
+  var recs=window._diaRecs||[];
+  var filtrados=tipoFiltro?recs.filter(function(r){return r.tipo===tipoFiltro;}):recs;
+
+  // Atualizar campos superiores (Acabamento / Revisão) com total da área filtrada
+  var totalFiltrado=filtrados.reduce(function(s,r){return s+r.tot;},0);
+  var lA=document.getElementById('fdPrLbl');
+  var lR=document.getElementById('fdRvLbl');
+  var vA=document.getElementById('fdPr');
+  var vR=document.getElementById('fdRv');
+  if(tipoFiltro){
+    var nomeCurto=tipoFiltro.replace('Linha / Embalagem','Linha/Emb.').replace('Trocas e Consertos','Trocas').replace('Prensa Térmica','Prensa');
+    if(lA) lA.textContent='Total '+nomeCurto;
+    if(vA){ vA.textContent=n(totalFiltrado); vA.style.color='var(--roxo)'; }
+    if(lR) lR.textContent='— colaboradoras';
+    var qtdColabs=Object.keys(filtrados.reduce(function(m,r){m[r.col]=1;return m;},{})).length;
+    if(vR){ vR.textContent=qtdColabs; vR.style.color='var(--txt)'; }
+  } else {
+    // Reset para valores originais ao limpar filtro
+    var dd=window._diaDd||{};
+    if(lA) lA.textContent='Acabamento';
+    if(vA){ vA.textContent=n((dd.lin||0)+(dd.troc||0)+(dd.etiq||0)+(dd.pren||0)); vA.style.color=''; }
+    if(lR) lR.textContent='Revisão';
+    if(vR){ vR.textContent=n(dd.rev||0); vR.style.color='var(--c-rev)'; }
+  }
+
+  // Recalcular modelos
+  var mods={};
+  filtrados.forEach(function(r){
+    if(TIPOS_ACAB.indexOf(r.tipo)>=0||r.tipo===tipoFiltro){
+      var nm=r.mod.split(' — ')[0].trim();
+      if(nm){if(!mods[nm])mods[nm]=0;mods[nm]+=r.tot;}
+    }
+  });
+  var mc=Object.keys(mods).length;
+  document.getElementById('fdMc').textContent=mc||'0';
+  var ml=document.getElementById('fdMl');ml.innerHTML='';
+  if(!mc){ml.innerHTML='<div style="font-size:11px;color:var(--txt-s);padding:8px 0">Sem dados</div>';}
+  else{Object.entries(mods).sort(function(a,b){return b[1]-a[1];}).forEach(function(m){
+    var div=document.createElement('div');
+    div.className='mr clickable';
+    div.innerHTML='<span class="mn12">'+m[0]+'</span><span class="mv">'+n(m[1])+'</span>';
+    div.onclick=function(e){e.stopPropagation();abrirSubModelo(m[0],e);};
+    ml.appendChild(div);
+  });}
+
+  // Recalcular colaboradoras
+  var cols2={};
+  filtrados.forEach(function(r){
+    if(!cols2[r.col])cols2[r.col]={tot:0,tipos:{}};
+    cols2[r.col].tot+=r.tot;
+    if(!cols2[r.col].tipos[r.tipo])cols2[r.col].tipos[r.tipo]=0;
+    cols2[r.col].tipos[r.tipo]+=r.tot;
+  });
+  var cl=document.getElementById('fdCl');cl.innerHTML='';
+  Object.entries(cols2).sort(function(a,b){return b[1].tot-a[1].tot;}).forEach(function(en){
+    var nm=en[0],d=en[1];
+    var tp2=Object.entries(d.tipos).sort(function(a,b){return b[1]-a[1];})[0];
+    var ta=(tp2?tp2[0]:'').replace('Linha / Embalagem','Linha/Emb.').replace('Trocas e Consertos','Trocas').replace('Prensa Térmica','Prensa');
+    var infoC=_tiposColab[nm.toUpperCase()]||{};
+    var ctIcone=infoC.contratacao==='FIXO'?'🏠':infoC.contratacao==='TESTE'?'🧪':'';
+    (function(nome,dados,tipo){
+      var div=document.createElement('div');
+      div.className='colab-dia-row clickable';
+      div.innerHTML='<div class="colab-dia-top"><span class="colab-dia-nome">'
+        +(ctIcone?'<span style="margin-right:3px">'+ctIcone+'</span>':'')+nome+'</span>'
+        +'<span class="colab-dia-val">'+n(dados.tot)+'</span></div>'
+        +(tipo?'<span class="colab-dia-tipo">'+tipo+'</span>':'');
+      div.onclick=function(e){e.stopPropagation();abrirSubColab(nome,e);};
+      cl.appendChild(div);
+    })(nm,d,ta);
+  });
+}
+
 function renderFalhas(){
   var fFac = (document.getElementById('rfFac').value||'').toUpperCase().trim();
   var fOS  = (document.getElementById('rfOS').value||'').toUpperCase().trim();
@@ -1491,9 +1776,8 @@ function renderFalhas(){
   var fCor = (document.getElementById('rfCor').value||'').toUpperCase().trim();
   var fTam = (document.getElementById('rfTam').value||'').toUpperCase().trim();
 
-  var base = window._base || filt;
+  var base = baseFiltrada();
   var temFiltro = fFac||fOS||fMod||fCor||fTam;
-
   if(!temFiltro){
     document.getElementById('tbFalhas').innerHTML='<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--txt-s);">Preencha ao menos um campo para rastrear</td></tr>';
     document.getElementById('rfResumo').textContent='';
@@ -1567,7 +1851,1369 @@ function goTab(id,btn){
   document.getElementById('tab-'+id).classList.add('active');
   btn.classList.add('active');
   if(id==='falhas') renderFalhas();
+  if(id==='perf'){
+    iniciarPerfArea();
+    renderPerfMainContent();
+  }
 }
+
+
+
+
+// ═══════════════════════════════════════════════════════════════
+// PERFORMANCE v3 — visual por área, pódio, comparativo
+// ═══════════════════════════════════════════════════════════════
+
+var _perfAreaAtiva = '__TODAS__'; // '__TODAS__' ou nome da área
+var _perfCompSet   = new Set();
+var _perfCompCores = ['#592C95','#1D9E75','#E24B4A','#EF9F27'];
+var _perfDetalheNome = null; // colaboradora aberta no detalhe
+var _soFixos = false; // filtro global: mostrar apenas FIXOS na Performance
+
+function toggleSoFixos(){
+  _soFixos = !_soFixos;
+  var btn = document.getElementById('btnSoFixos');
+  if(btn){
+    btn.classList.toggle('active', _soFixos);
+    btn.textContent = _soFixos ? '🏠 Só FIXOS ✓' : '🏠 Só FIXOS';
+  }
+  // Re-renderiza a aba atualmente ativa
+  var tcAtiva = document.querySelector('.tc.active');
+  if(!tcAtiva) return;
+  var id = tcAtiva.id; // 'tab-prod', 'tab-qual', 'tab-perf', 'tab-falhas'
+  if(id==='tab-prod')   renderProd();
+  else if(id==='tab-qual')  renderQual();
+  else if(id==='tab-perf')  renderPerfMainContent();
+  // tab-falhas: não re-renderiza automaticamente (depende de input do usuário)
+}
+
+// Retorna base de dados filtrada por FIXO quando _soFixos estiver ativo — aplicado em TODO o dash
+function baseFiltrada(){
+  var base = window._base || filt;
+  if(!_soFixos) return base;
+  return base.filter(function(r){
+    var info = _tiposColab[r.col.toUpperCase()] || {};
+    return info.contratacao === 'FIXO';
+  });
+}
+
+var METAS_IND  = {'Etiquetagem':1500,'Revisão':1200,'Linha / Embalagem':500,'Prensa Térmica':1200,'Trocas e Consertos':500};
+var METAS_AREA_P = {'Etiquetagem':3000,'Revisão':4000,'Linha / Embalagem':3000,'Prensa Térmica':1500,'Trocas e Consertos':400};
+var COR_AREA   = {'Revisão':'#AE76E5','Linha / Embalagem':'#1D9E75','Trocas e Consertos':'#185FA5','Etiquetagem':'#0891b2','Prensa Térmica':'#7c3aed'};
+var ICONE_AREA = {'Revisão':'🔍','Linha / Embalagem':'📦','Trocas e Consertos':'🔧','Etiquetagem':'🏷️','Prensa Térmica':'♨️'};
+
+function aL(t){ return (t||'').replace('Linha / Embalagem','Linha/Emb.').replace('Trocas e Consertos','Trocas').replace('Prensa Térmica','Prensa'); }
+function corArea(t){ return COR_AREA[t]||'var(--roxo)'; }
+function icArea(t){ return ICONE_AREA[t]||'👤'; }
+
+// ── INICIALIZAR ABA ──────────────────────────────────────────
+function iniciarPerfArea(){
+  var base = window._base || filt;
+  var areas = Object.keys(
+    base.reduce(function(m,r){ m[r.tipo]=1; return m; }, {})
+  ).sort();
+
+  var tabs = document.getElementById('perfAreaTabs');
+  if(!tabs) return;
+  tabs.innerHTML = '';
+
+  // Tab "Visão Geral"
+  var t0 = document.createElement('button');
+  t0.className = 'perf-area-tab' + (_perfAreaAtiva==='__TODAS__'?' active':'');
+  t0.dataset.area = '__TODAS__';
+  t0.innerHTML = '📊 Visão Geral';
+  t0.onclick = function(){ setPerfAreaV3('__TODAS__'); };
+  tabs.appendChild(t0);
+
+  areas.forEach(function(a){
+    var t = document.createElement('button');
+    t.className = 'perf-area-tab' + (_perfAreaAtiva===a?' active':'');
+    t.dataset.area = a;
+    t.innerHTML = icArea(a)+' '+aL(a);
+    t.style.borderLeft = '1px solid var(--brd)';
+    t.onclick = function(){ setPerfAreaV3(a); };
+    tabs.appendChild(t);
+  });
+}
+
+function setPerfAreaV3(area){
+  _perfAreaAtiva = area;
+  _perfCompSet.clear();
+  _perfDetalheNome = null;
+  document.querySelectorAll('.perf-area-tab').forEach(function(t){
+    t.classList.toggle('active', t.dataset.area===area);
+  });
+  renderPerfMainContent();
+}
+
+// ── RENDER PRINCIPAL ─────────────────────────────────────────
+function renderPerfMainContent(){
+  var el = document.getElementById('perfMainContent');
+  if(!el) return;
+  el.style.display = 'block';
+  var det = document.getElementById('perfDetalhe');
+  if(det){ det.style.display = 'none'; det.innerHTML = ''; }
+
+  if(_perfAreaAtiva==='__TODAS__'){
+    renderPerfVisaoGeral();
+  } else {
+    renderPerfDeArea(_perfAreaAtiva);
+  }
+}
+
+// ── VISÃO GERAL: um card por área ────────────────────────────
+// Ranking de Performance sempre só FIXOS (independente do botão Só FIXOS)
+function baseFixos(){
+  var base = window._base || filt;
+  var fixos = base.filter(function(r){
+    var info = _tiposColab[r.col.toUpperCase()] || {};
+    return info.contratacao === 'FIXO';
+  });
+  // Se nenhum colaborador tem FIXO cadastrado ainda, usa base completa
+  return fixos.length > 0 ? fixos : base;
+}
+
+function renderPerfVisaoGeral(){
+  var base = baseFixos();
+  var areas = Object.keys(
+    base.reduce(function(m,r){ m[r.tipo]=1; return m; }, {})
+  ).sort();
+
+  var html = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px;">';
+
+  areas.forEach(function(area){
+    var src = base.filter(function(r){ return r.tipo===area; });
+    var pc = {};
+    src.forEach(function(r){
+      if(!pc[r.col]) pc[r.col]={tot:0,dias:new Set()};
+      pc[r.col].tot+=r.tot;
+      pc[r.col].dias.add(r.ds);
+    });
+    var cols = Object.keys(pc).sort(function(a,b){
+      return Math.round(pc[b].tot/(pc[b].dias.size||1)) - Math.round(pc[a].tot/(pc[a].dias.size||1));
+    });
+    var totalArea = cols.reduce(function(s,c){ return s+pc[c].tot; }, 0);
+    var meta = METAS_IND[area]||0;
+    var cor = corArea(area);
+
+    // Top 3 e restantes
+    var top3  = cols.slice(0,3);
+    var resto = cols.slice(3,8);
+
+    html += '<div style="background:#fff;border:1px solid var(--brd);border-radius:14px;overflow:hidden;box-shadow:0 2px 8px rgba(89,44,149,.06);">';
+
+    // Header da área
+    html += '<div style="background:'+cor+';padding:12px 16px;display:flex;justify-content:space-between;align-items:center;">'
+      + '<div style="display:flex;align-items:center;gap:8px;">'
+      +   '<span style="font-size:20px;">'+icArea(area)+'</span>'
+      +   '<div>'
+      +     '<div style="font-size:14px;font-weight:900;color:#fff;">'+aL(area)+'</div>'
+      +     '<div style="font-size:10px;color:rgba(255,255,255,.7);">'+cols.length+' colaboradoras · '+n(totalArea)+' peças</div>'
+      +   '</div>'
+      + '</div>'
+      + '<button onclick="setPerfAreaV3(\''+area+'\')" style="background:rgba(255,255,255,.2);border:none;color:#fff;padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;">Ver detalhe →</button>'
+      + '</div>';
+
+    // Pódio top 3
+    if(top3.length){
+      html += '<div style="padding:14px 16px 6px;display:flex;align-items:flex-end;justify-content:center;gap:6px;min-height:110px;">';
+
+      // Ordem: 2º, 1º, 3º
+      var ordem = top3.length>=3?[top3[1],top3[0],top3[2]]:top3.length===2?[top3[1],top3[0]]:top3;
+      var posicoes = top3.length>=2?[1,0,2]:[0];
+      var alturas  = [70,90,55];
+      var medalhas = ['🥈','🥇','🥉'];
+      var bordas   = ['#C0C0C0','#FFD23F','#CD7F32'];
+
+      ordem.forEach(function(col,i){
+        var pos = posicoes[i];
+        var dias = pc[col].dias.size||1;
+        var media = Math.round(pc[col].tot/dias);
+        var pctMeta = meta?Math.round(media/meta*100):null;
+        var corMeta = pctMeta===null?cor:pctMeta>=100?'var(--ok)':pctMeta>=80?'var(--warn)':'var(--bad)';
+        var infoC = _tiposColab[col.toUpperCase()]||{};
+        var ctIcone = infoC.contratacao==='FIXO'?'🏠':infoC.contratacao==='TESTE'?'🧪':'';
+        html += '<div onclick="abrirPerfDetalhe(\''+col+'\')" style="flex:1;display:flex;flex-direction:column;align-items:center;cursor:pointer;max-width:120px;">'
+          + '<div style="font-size:18px;margin-bottom:3px;">'+(pos===0?'🥇':pos===1?'🥈':'🥉')+'</div>'
+          + '<div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,'+cor+','+cor+'99);'
+          +   'display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900;color:#fff;'
+          +   'border:3px solid '+bordas[i]+';margin-bottom:4px;flex-shrink:0;">'+ini(col)+'</div>'
+          + '<div style="font-size:10px;font-weight:800;color:var(--txt);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100px;">'+(ctIcone?ctIcone+' ':'')+col+'</div>'
+          + '<div style="font-size:13px;font-weight:900;color:'+cor+';">'+n(media)+'</div>'
+          + '<div style="font-size:9px;color:var(--txt-s);">pç/dia'+(pctMeta!==null?' · '+pctMeta+'%':'')+'</div>'
+          + (pos===0?'<div style="font-size:9px;background:'+cor+';color:#fff;padding:1px 6px;border-radius:8px;margin-top:2px;">Líder</div>':'')
+          + '</div>';
+      });
+      html += '</div>';
+    }
+
+    // Barra do pódio estilo visual
+    if(top3.length>=2){
+      html += '<div style="display:flex;align-items:flex-end;justify-content:center;gap:6px;padding:0 16px 4px;">';
+      var ordemBar = top3.length>=3?[top3[1],top3[0],top3[2]]:top3;
+      var maxMedia = Math.round(pc[top3[0]].tot/(pc[top3[0]].dias.size||1));
+      var hBars = [40,56,30];
+      ordemBar.forEach(function(col,i){
+        var m = Math.round(pc[col].tot/(pc[col].dias.size||1));
+        var h = i===1?56:Math.round((m/maxMedia)*50);
+        html += '<div style="flex:1;height:'+h+'px;background:'+cor+';opacity:'+(i===1?1:.6)+';border-radius:4px 4px 0 0;max-width:120px;"></div>';
+      });
+      html += '</div>';
+    }
+
+    // Lista 4-8
+    if(resto.length){
+      html += '<div style="padding:6px 16px 12px;border-top:1px solid var(--lav-l);">';
+      resto.forEach(function(col,i){
+        var dias = pc[col].dias.size||1;
+        var media = Math.round(pc[col].tot/dias);
+        var pctMeta = meta?Math.round(media/meta*100):null;
+        var corMeta2 = pctMeta===null?cor:pctMeta>=100?'var(--ok)':pctMeta>=80?'var(--warn)':'var(--bad)';
+        var infoC = _tiposColab[col.toUpperCase()]||{};
+        var ctIcone = infoC.contratacao==='FIXO'?'🏠':infoC.contratacao==='TESTE'?'🧪':'';
+        html += '<div onclick="abrirPerfDetalhe(\''+col+'\')" style="display:flex;align-items:center;gap:8px;padding:4px 0;cursor:pointer;border-bottom:1px solid var(--lav-l);transition:background .1s;" onmouseenter="this.style.background=\'var(--lav-l)\'" onmouseleave="this.style.background=\'\'">'
+          + '<span style="font-size:10px;color:var(--txt-s);width:16px;font-weight:700;">'+(i+4)+'.</span>'
+          + '<span style="font-size:11px;font-weight:700;color:var(--txt);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+(ctIcone?ctIcone+' ':'')+col+'</span>'
+          + '<span style="font-size:12px;font-weight:800;color:'+cor+';">'+n(media)+'</span>'
+          + '<span style="font-size:10px;color:'+corMeta2+';width:36px;text-align:right;">'+(pctMeta!==null?pctMeta+'%':'')+'</span>'
+          + '</div>';
+      });
+      if(cols.length>8) html += '<div style="font-size:10px;color:var(--txt-s);padding:4px 0;text-align:center;">+'+(cols.length-8)+' outros</div>';
+      html += '</div>';
+    }
+
+    html += '</div>'; // fim card área
+  });
+
+  html += '</div>';
+  document.getElementById('perfMainContent').innerHTML = html;
+  document.getElementById('perfDetalhe').style.display = 'none';
+}
+
+// ── DETALHE DE UMA ÁREA COMPLETA ─────────────────────────────
+function renderPerfDeArea(area){
+  var base = baseFixos();
+  var src  = base.filter(function(r){ return r.tipo===area; });
+  var cor  = corArea(area);
+  var meta = METAS_IND[area]||0;
+
+  var pc = {};
+  src.forEach(function(r){
+    if(!pc[r.col]) pc[r.col]={tot:0,dias:new Set(),semanas:{}};
+    pc[r.col].tot+=r.tot;
+    pc[r.col].dias.add(r.ds);
+    var dt=r.data,dow=dt.getDay(),ini2=new Date(dt);
+    ini2.setDate(dt.getDate()-dow);
+    var sw=fd(ini2);
+    if(!pc[r.col].semanas[sw]) pc[r.col].semanas[sw]={tot:0,dias:new Set()};
+    pc[r.col].semanas[sw].tot+=r.tot;
+    pc[r.col].semanas[sw].dias.add(r.ds);
+  });
+
+  var cols = Object.keys(pc).sort(function(a,b){
+    return Math.round(pc[b].tot/(pc[b].dias.size||1)) - Math.round(pc[a].tot/(pc[a].dias.size||1));
+  });
+
+  if(!cols.length){
+    document.getElementById('perfMainContent').innerHTML = '<div style="padding:40px;text-align:center;color:var(--txt-s)">Sem dados para '+aL(area)+' no período selecionado</div>';
+    return;
+  }
+
+  var totalArea = cols.reduce(function(s,c){ return s+pc[c].tot; }, 0);
+  var mediaEquipe = Math.round(totalArea/(cols.length||1));
+  var maxMedia = Math.round(pc[cols[0]].tot/(pc[cols[0]].dias.size||1));
+
+  // ── Stats gerais da área
+  var acima = cols.filter(function(c){ return Math.round(pc[c].tot/(pc[c].dias.size||1))>=meta; });
+
+  var html = '';
+
+  // Botão voltar para Visão Geral
+  html += '<div onclick="setPerfAreaV3(\'__TODAS__\')" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;border:1px solid var(--brd);background:#fff;cursor:pointer;font-size:12px;font-weight:700;color:var(--roxo);margin-bottom:14px;transition:background .12s;" onmouseover="this.style.background=\'var(--lav-l)\'" onmouseout="this.style.background=\'#fff\'">← Voltar para Visão Geral</div>';
+
+  // Header da área com KPIs
+  html += '<div style="background:'+cor+';border-radius:14px;padding:16px 20px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">'
+    + '<div style="display:flex;align-items:center;gap:12px;">'
+    +   '<span style="font-size:28px;">'+icArea(area)+'</span>'
+    +   '<div>'
+    +     '<div style="font-size:18px;font-weight:900;color:#fff;">'+aL(area)+'</div>'
+    +     '<div style="font-size:11px;color:rgba(255,255,255,.7);">'+cols.length+' colaboradoras · '+n(totalArea)+' peças no período</div>'
+    +   '</div>'
+    + '</div>'
+    + '<div style="display:flex;gap:16px;">'
+    +   perfKpiHeader('Líder',cols[0]+' — '+n(Math.round(pc[cols[0]].tot/(pc[cols[0]].dias.size||1)))+' pç/dia')
+    +   perfKpiHeader('Média equipe',n(Math.round(totalArea/cols.reduce(function(s,c){return s+pc[c].dias.size;},0)||1))+' pç/dia')
+    +   (meta?perfKpiHeader('Meta',n(meta)+' pç/dia'):'')
+    +   perfKpiHeader('Na meta',acima.length+'/'+cols.length)
+    + '</div>'
+    + '</div>';
+
+  // PÓDIO TOP 3 grande + comparativo de barras
+  html += '<div style="display:grid;grid-template-columns:auto 1fr;gap:14px;margin-bottom:16px;">';
+
+  // Pódio
+  html += '<div style="background:#fff;border:1px solid var(--brd);border-radius:14px;padding:16px 20px;min-width:320px;">';
+  html += '<div style="font-size:10px;font-weight:800;color:'+cor+';text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;">🏆 Top 3</div>';
+
+  var top3 = cols.slice(0,3);
+  var ordemPodio  = top3.length>=3?[top3[1],top3[0],top3[2]]:top3.length===2?[top3[1],top3[0]]:top3;
+  var posicoes3   = [1,0,2];
+  var medalhas3   = ['🥈','🥇','🥉'];
+  var bordas3     = ['#C0C0C0','#FFD23F','#CD7F32'];
+  var altH        = [80,100,65];
+
+  html += '<div style="display:flex;align-items:flex-end;justify-content:center;gap:8px;min-height:130px;">';
+  ordemPodio.forEach(function(col,i){
+    var pos  = posicoes3[i];
+    var dias = pc[col].dias.size||1;
+    var media2 = Math.round(pc[col].tot/dias);
+    var pctMeta = meta?Math.round(media2/meta*100):null;
+    var corMeta = pctMeta===null?cor:pctMeta>=100?'#0F6E56':pctMeta>=80?'#854F0B':'#A32D2D';
+    var infoC = _tiposColab[col.toUpperCase()]||{};
+    var ctIcone = infoC.contratacao==='FIXO'?'🏠':infoC.contratacao==='TESTE'?'🧪':'';
+    html += '<div onclick="abrirPerfDetalhe(\''+col+'\')" style="flex:1;display:flex;flex-direction:column;align-items:center;cursor:pointer;max-width:130px;">'
+      + '<div style="font-size:22px;margin-bottom:4px;">'+medalhas3[i]+'</div>'
+      + '<div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,'+cor+','+cor+'aa);'
+      +   'display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900;color:#fff;'
+      +   'border:3px solid '+bordas3[i]+';margin-bottom:6px;box-shadow:0 4px 12px '+cor+'44;">'+ini(col)+'</div>'
+      + '<div style="font-size:11px;font-weight:800;color:var(--txt);text-align:center;margin-bottom:2px;">'+(ctIcone?ctIcone+' ':'')+col+'</div>'
+      + '<div style="font-size:16px;font-weight:900;color:'+cor+';">'+n(media2)+'</div>'
+      + '<div style="font-size:9px;color:var(--txt-s)">pç/dia · '+dias+'d</div>'
+      + (pctMeta!==null?'<div style="font-size:10px;font-weight:800;color:'+corMeta+';margin-top:2px">'+pctMeta+'% meta</div>':'')
+      + '</div>';
+  });
+  html += '</div>';
+
+  // Barras decorativas do pódio
+  html += '<div style="display:flex;align-items:flex-end;justify-content:center;gap:8px;margin-top:8px;">';
+  ordemPodio.forEach(function(col,i){
+    html += '<div style="flex:1;height:'+altH[i]+'px;background:'+cor+';opacity:'+(i===1?1:.55)+';border-radius:6px 6px 0 0;max-width:130px;"></div>';
+  });
+  html += '</div>';
+  html += '</div>'; // fim pódio
+
+  // Gráfico de barras completo (todas colaboradoras)
+  html += '<div style="background:#fff;border:1px solid var(--brd);border-radius:14px;padding:16px 18px;overflow-y:auto;max-height:380px;">';
+  html += '<div style="font-size:10px;font-weight:800;color:'+cor+';text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">📊 Ranking completo — média pç/dia</div>';
+  html += '<div style="font-size:10px;color:var(--txt-s);margin-bottom:8px;font-weight:600;">Clique em qualquer nome para ver perfil detalhado</div>';
+
+  cols.forEach(function(col,i){
+    var dias = pc[col].dias.size||1;
+    var media2 = Math.round(pc[col].tot/dias);
+    var pctMeta = meta?Math.round(media2/meta*100):null;
+    var corMeta = pctMeta===null?cor:pctMeta>=100?'#0F6E56':pctMeta>=80?'#854F0B':'#A32D2D';
+    var barPct = maxMedia?Math.min(Math.round((media2/maxMedia)*100),100):0;
+    var infoC = _tiposColab[col.toUpperCase()]||{};
+    var ctIcone = infoC.contratacao==='FIXO'?'🏠':infoC.contratacao==='TESTE'?'🧪':'';
+    var isSel = _perfCompSet.has(col);
+    var corSel = isSel?_perfCompCores[Array.from(_perfCompSet).indexOf(col)%_perfCompCores.length]:cor;
+
+    // Percentual de complexidade das peças deste colaborador
+    var complexMap = window._complexMap||{};
+    var cTot=0, cAlto=0, cMedio=0, cBaixo=0;
+    src.filter(function(r){ return r.col===col; }).forEach(function(r){
+      var mNorm = r.mod.toUpperCase().trim().replace(/\s*[—\-]\s*/g,' - ');
+      var cv = (complexMap[mNorm]||complexMap[mNorm.split(' - ')[0].trim()]||'').toUpperCase();
+      cTot += r.tot;
+      if(cv==='ALTO') cAlto+=r.tot;
+      else if(cv==='MÉDIO'||cv==='MEDIO') cMedio+=r.tot;
+      else if(cv==='BAIXO') cBaixo+=r.tot;
+    });
+    var cClassif = cAlto+cMedio+cBaixo;
+    var compTag = '';
+    if(cClassif>0 && cTot>0){
+      var pAlto  = Math.round(cAlto/cTot*100);
+      var pMedio = Math.round(cMedio/cTot*100);
+      var pBaixo = Math.round(cBaixo/cTot*100);
+      compTag = '<div style="display:flex;gap:3px;flex-shrink:0;">'
+        + (pAlto>0  ? '<span style="font-size:9px;font-weight:700;padding:1px 4px;border-radius:5px;background:#fee2e2;color:#991b1b;">'+pAlto+'%A</span>' : '')
+        + (pMedio>0 ? '<span style="font-size:9px;font-weight:700;padding:1px 4px;border-radius:5px;background:#fef3c7;color:#854d0e;">'+pMedio+'%M</span>' : '')
+        + (pBaixo>0 ? '<span style="font-size:9px;font-weight:700;padding:1px 4px;border-radius:5px;background:#dcfce7;color:#166534;">'+pBaixo+'%B</span>' : '')
+        + '</div>';
+    }
+
+    html += '<div style="display:flex;align-items:center;gap:8px;padding:5px 6px;border-radius:8px;border:2px solid '+(isSel?corSel:'transparent')+';margin-bottom:3px;background:'+(isSel?corSel+'12':'transparent')+';transition:all .12s;" onmouseenter="this.style.background=\''+(isSel?corSel+'12':'var(--lav-l)')+'\'" onmouseleave="this.style.background=\''+(isSel?corSel+'12':'transparent')+'\'\">'
+      + '<span style="font-size:11px;color:var(--txt-s);width:20px;font-weight:700;flex-shrink:0">'+(i+1)+'.</span>'
+      + '<input type="checkbox" '+(isSel?'checked':'')+' onclick="event.stopPropagation();togglePerfCompV3(\''+col+'\',this.closest(\'div\'),\''+area+'\')" style="cursor:pointer;accent-color:'+corSel+';flex-shrink:0;" title="Selecionar para comparar">'
+      + '<div class="ficha-btn" data-col="'+col.replace(/"/g,'&quot;')+'" data-area="'+area+'" style="display:flex;align-items:center;gap:6px;cursor:pointer;width:130px;flex-shrink:0;">'
+      +   '<div style="width:26px;height:26px;border-radius:50%;background:'+cor+';display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;color:#fff;flex-shrink:0;border:2px solid '+(isSel?corSel:'transparent')+';">'+ini(col)+'</div>'
+      +   '<span style="font-size:11px;font-weight:700;color:var(--roxo);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+(ctIcone?ctIcone+' ':'')+col+'</span>'
+      + '</div>'
+      + '<div style="flex:1;height:12px;background:var(--lav-l);border-radius:6px;overflow:hidden;position:relative;">'
+      +   '<div style="height:12px;background:'+(isSel?corSel:cor)+';border-radius:6px;width:'+barPct+'%;transition:width .4s;"></div>'
+      +   (meta?'<div style="position:absolute;top:0;height:12px;width:2px;background:#fff;opacity:.8;left:'+Math.min(Math.round((meta/maxMedia)*100),100)+'%"></div>':'')
+      + '</div>'
+      + '<span style="font-size:12px;font-weight:800;color:'+(isSel?corSel:cor)+';width:55px;text-align:right;flex-shrink:0">'+n(media2)+'</span>'
+      + (pctMeta!==null?'<span style="font-size:10px;font-weight:700;color:'+corMeta+';width:38px;text-align:right;flex-shrink:0">'+pctMeta+'%</span>':'')
+      + compTag
+      + '</div>';
+  });
+
+  // Meta legend
+  if(meta){
+    html += '<div style="display:flex;align-items:center;gap:6px;margin-top:8px;font-size:10px;color:var(--txt-s);">'
+      + '<div style="width:2px;height:10px;background:var(--txt-s);opacity:.4;"></div>'
+      + '<span>Linha de meta: '+n(meta)+' pç/dia</span></div>';
+  }
+  html += '</div>'; // fim ranking
+  html += '</div>'; // fim grid
+
+  // CARD COMPLEXIDADE DA ÁREA (sempre visível)
+  var complexMap = window._complexMap||{};
+  var compStats = {alto:0,medio:0,baixo:0,sem:0};
+  src.forEach(function(r){
+    var modFull = r.mod.toUpperCase().trim().replace(/\s*[—\-]\s*/g,' - ');
+    var modCurto = modFull.split(' - ')[0].trim();
+    var cv=(complexMap[modFull]||complexMap[modCurto]||'').toUpperCase();
+    if(cv==='ALTO') compStats.alto+=r.tot;
+    else if(cv==='MÉDIO'||cv==='MEDIO'||cv==='MEDIO'||cv==='M\u00C9DIO') compStats.medio+=r.tot;
+    else if(cv==='BAIXO') compStats.baixo+=r.tot;
+    else compStats.sem+=r.tot;
+  });
+  var totalCompArea=compStats.alto+compStats.medio+compStats.baixo+compStats.sem;
+  var temCompArea=(compStats.alto+compStats.medio+compStats.baixo)>0;
+
+  html += '<div style="background:#fff;border:1px solid var(--brd);border-radius:14px;padding:16px 18px;margin-bottom:14px;">';
+  html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">';
+  html += '<div><div style="font-size:14px;font-weight:900;color:var(--roxo);">🧩 Complexidade das Peças</div>';
+  html += '<div style="font-size:11px;color:var(--txt-s);margin-top:2px;">Distribuição por nível de complexidade no processamento</div></div>';
+  if(!temCompArea){
+    html += '<div style="font-size:11px;font-weight:700;background:#FEF9EC;color:#854F0B;padding:6px 12px;border-radius:8px;border:1px solid #F59E0B;">⏳ Aguardando dados — preencha na planilha</div>';
+  }
+  html += '</div>';
+
+  if(temCompArea){
+    var compArr2=[['Alto',compStats.alto,'#A32D2D'],['Médio',compStats.medio,'#854F0B'],['Baixo',compStats.baixo,'#0F6E56']];
+    var maxComp=Math.max.apply(null,compArr2.map(function(x){return x[1];}));
+    html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;">';
+    compArr2.forEach(function(x){
+      var pct2=totalCompArea?Math.round((x[1]/totalCompArea)*100):0;
+      html += '<div style="text-align:center;padding:14px;border-radius:10px;background:'+x[2]+'18;border:1px solid '+x[2]+'40;">';
+      html += '<div style="font-size:22px;font-weight:900;color:'+x[2]+';">'+pct2+'%</div>';
+      html += '<div style="font-size:11px;font-weight:800;color:'+x[2]+';margin-bottom:2px;">'+x[0]+'</div>';
+      html += '<div style="font-size:11px;color:var(--txt-s);">'+n(x[1])+' peças</div>';
+      html += '</div>';
+    });
+    html += '</div>';
+    // Barra horizontal
+    html += '<div style="display:flex;height:14px;border-radius:7px;overflow:hidden;margin-bottom:8px;">';
+    compArr2.filter(function(x){return x[1]>0;}).forEach(function(x){
+      var w=totalCompArea?Math.round((x[1]/totalCompArea)*100):0;
+      html += '<div style="width:'+w+'%;background:'+x[2]+';transition:width .3s;" title="'+x[0]+': '+w+'%"></div>';
+    });
+    html += '</div>';
+  } else {
+    // Placeholder visual
+    html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;">';
+    [['Alto','#A32D2D'],['Médio','#854F0B'],['Baixo','#0F6E56']].forEach(function(x){
+      html += '<div style="text-align:center;padding:14px;border-radius:10px;background:var(--lav-l);border:2px dashed var(--brd);">';
+      html += '<div style="font-size:22px;font-weight:900;color:var(--txt-s);">—</div>';
+      html += '<div style="font-size:11px;font-weight:800;color:'+x[1]+';margin-bottom:2px;">'+x[0]+'</div>';
+      html += '<div style="font-size:10px;color:var(--txt-s);">Sem dados</div>';
+      html += '</div>';
+    });
+    html += '</div>';
+    html += '<div style="height:14px;border-radius:7px;background:var(--lav-l);margin-bottom:8px;"></div>';
+    html += '<div style="font-size:11px;color:var(--txt-s);text-align:center;">📋 Para ativar: preencha a coluna COMPLEXIDADE na aba ⚙️ LISTAS da planilha (BAIXO/MÉDIO/ALTO)</div>';
+  }
+  html += '</div>';
+
+  // COMPARATIVO (se houver selecionados) — fica depois dos cards
+  // NÃO colocar aqui — está no final, após os cards
+
+  // perfCompView SEMPRE no final — depois de todos os cards
+  html += '<div id="perfCompView" style="margin-top:14px;display:none;"></div>';
+
+  document.getElementById('perfMainContent').innerHTML = html;
+  document.getElementById('perfDetalhe').style.display = 'none';
+
+  // Renderizar comparativo se houver selecionados
+  if(_perfCompSet.size>=2){
+    renderPerfCompView(area);
+  }
+}
+
+function perfKpiHeader(label,valor){
+  return '<div style="text-align:right;padding:0 8px;border-left:1px solid rgba(255,255,255,.25);">'
+    +'<div style="font-size:9px;color:rgba(255,255,255,.65);text-transform:uppercase;letter-spacing:.05em;">'+label+'</div>'
+    +'<div style="font-size:13px;font-weight:900;color:#fff;">'+valor+'</div>'
+    +'</div>';
+}
+
+// ── FICHA DO COLABORADOR ──────────────────────────────────────
+var _fichaColabAtiva = null;
+
+function abrirFichaColab(nome, area){
+  _fichaColabAtiva = nome;
+
+  var base = window._base || filt;
+  var complexMap = window._complexMap || {};
+  var infoC = _tiposColab[nome.toUpperCase()] || {};
+  var cor = corArea(area);
+  var meta = METAS_IND[area]||0;
+
+  // Registros da área atual e de todas as áreas
+  var recsArea = base.filter(function(r){ return r.col===nome && r.tipo===area; });
+  var todosRecs = base.filter(function(r){ return r.col===nome; });
+
+  // ── Evolução por dia
+  var porDia = {};
+  recsArea.forEach(function(r){
+    porDia[r.ds] = (porDia[r.ds]||0) + r.tot;
+  });
+  var diasOrdem = Object.keys(porDia).sort();
+  var diasSet = new Set(diasOrdem);
+  var totalPcs = recsArea.reduce(function(s,r){ return s+r.tot; },0);
+  var mediaDia = diasSet.size ? Math.round(totalPcs/diasSet.size) : 0;
+  var pctMeta = meta ? Math.round(mediaDia/meta*100) : null;
+  var corMeta = pctMeta===null?cor:pctMeta>=100?'#0F6E56':pctMeta>=80?'#854F0B':'#A32D2D';
+
+  // ── Complexidade
+  var cAlto=0,cMedio=0,cBaixo=0,cTotC=0;
+  recsArea.forEach(function(r){
+    var mNorm = r.mod.toUpperCase().trim().replace(/\s*[—\-]\s*/g,' - ');
+    var cv2=(complexMap[mNorm]||complexMap[mNorm.split(' - ')[0].trim()]||'').toUpperCase();
+    cTotC+=r.tot;
+    if(cv2==='ALTO') cAlto+=r.tot;
+    else if(cv2==='MÉDIO'||cv2==='MEDIO') cMedio+=r.tot;
+    else if(cv2==='BAIXO') cBaixo+=r.tot;
+  });
+  var cClassif = cAlto+cMedio+cBaixo;
+  var pAlto  = cClassif?Math.round(cAlto/cTotC*100):0;
+  var pMedio = cClassif?Math.round(cMedio/cTotC*100):0;
+  var pBaixo = cClassif?Math.round(cBaixo/cTotC*100):0;
+
+  // ── Ranking na área
+  var pcArea = {};
+  base.filter(function(r){ return r.tipo===area; }).forEach(function(r){
+    if(!pcArea[r.col]) pcArea[r.col]={tot:0,dias:new Set()};
+    pcArea[r.col].tot+=r.tot; pcArea[r.col].dias.add(r.ds);
+  });
+  var ranking = Object.keys(pcArea).sort(function(a,b){
+    var ma=pcArea[a].tot/(pcArea[a].dias.size||1);
+    var mb=pcArea[b].tot/(pcArea[b].dias.size||1);
+    return mb-ma;
+  });
+  var posRanking = ranking.indexOf(nome)+1;
+
+  // ── Outras áreas
+  var outrasAreas = [];
+  var tiposColab = {};
+  todosRecs.forEach(function(r){ tiposColab[r.tipo]=true; });
+  Object.keys(tiposColab).forEach(function(t){ if(t!==area) outrasAreas.push(aL(t)); });
+
+  // ── Top modelos por total produzido (modelo+cor)
+  var porModCor = {};
+  recsArea.forEach(function(r){
+    var k = r.mod + (r.cor?' — '+r.cor:'');
+    if(!porModCor[k]) porModCor[k]={tot:0,mod:r.mod,cor:r.cor};
+    porModCor[k].tot+=r.tot;
+  });
+  var topModCor = Object.keys(porModCor).sort(function(a,b){ return porModCor[b].tot-porModCor[a].tot; });
+  var totalGeral = Object.values(porModCor).reduce(function(s,v){ return s+v.tot; },0)||1;
+
+  // ── Especialidade por modelo (independente de cor)
+  var porMod = {};
+  recsArea.forEach(function(r){
+    if(!porMod[r.mod]) porMod[r.mod]={tot:0,dias:new Set()};
+    porMod[r.mod].tot+=r.tot; porMod[r.mod].dias.add(r.ds);
+  });
+  var topMods = Object.keys(porMod).sort(function(a,b){ return porMod[b].tot-porMod[a].tot; });
+
+  // ── Gráfico SVG evolução
+  var svgW=620, svgH=160, padL=44, padR=12, padT=18, padB=20;
+  var vals = diasOrdem.map(function(d){ return porDia[d]; });
+  var maxV = Math.max.apply(null, vals.concat([meta||0])) * 1.1 || 1;
+  var cW = vals.length>1 ? (svgW-padL-padR)/(vals.length-1) : svgW-padL-padR;
+  var xOf = function(i){ return padL + i*cW; };
+  var yOf = function(v){ return padT + (1 - v/maxV)*(svgH-padT-padB); };
+  var pts = vals.map(function(v,i){ return [xOf(i).toFixed(1), yOf(v).toFixed(1)]; });
+  var polyline = pts.map(function(p){ return p[0]+','+p[1]; }).join(' ');
+  var areaPath = pts.length>1 ? 'M'+pts[0][0]+','+(svgH-padB)+' '+pts.map(function(p){ return 'L'+p[0]+','+p[1]; }).join(' ')+' L'+pts[pts.length-1][0]+','+(svgH-padB)+' Z' : '';
+  var metaY = meta ? yOf(meta).toFixed(1) : null;
+
+  // Linhas de grade Y (4 níveis)
+  var gridLines = '';
+  for(var gi=0;gi<=4;gi++){
+    var gv = Math.round(maxV/4*gi);
+    var gy = yOf(gv).toFixed(1);
+    gridLines += '<line x1="'+padL+'" y1="'+gy+'" x2="'+(svgW-padR)+'" y2="'+gy+'" stroke="#e5e7eb" stroke-width="0.7"/>';
+    gridLines += '<text x="'+(padL-4)+'" y="'+(+gy+3)+'" text-anchor="end" font-size="9" fill="#9ca3af">'+n(gv)+'</text>';
+  }
+
+  // Mostrar label em cada ponto — evita sobreposição verificando distância mínima
+  var step = 1; // sempre tenta mostrar todos
+  var minLabelGap = 28; // px mínimo entre labels consecutivos
+  var lastLabelX = -999;
+
+  var svgStr = '<svg viewBox="0 0 '+svgW+' '+svgH+'" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:160px;">'
+    + gridLines
+    + (areaPath?'<path d="'+areaPath+'" fill="'+cor+'" opacity=".1"/>':'')
+    + (pts.length>1?'<polyline points="'+polyline+'" fill="none" stroke="'+cor+'" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>':'')
+    + (metaY?'<line x1="'+padL+'" y1="'+metaY+'" x2="'+(svgW-padR)+'" y2="'+metaY+'" stroke="#d1d5db" stroke-width="1" stroke-dasharray="5,3"/>'
+            +'<text x="'+(svgW-padR-2)+'" y="'+(+metaY-4)+'" text-anchor="end" font-size="9" fill="#9ca3af">meta '+n(meta)+'</text>':'')
+    + (function(){
+        var out = '';
+        // Primeiro passe: decidir quais pontos mostram label
+        var showArr = pts.map(function(){ return false; });
+        // Sempre mostra primeiro e último
+        showArr[0] = true;
+        showArr[pts.length-1] = true;
+        // Do meio: mostra se distância do último label mostrado >= minLabelGap
+        var lastX = +pts[0][0];
+        for(var si=1; si<pts.length-1; si++){
+          var px = +pts[si][0];
+          if(px - lastX >= minLabelGap){ showArr[si]=true; lastX=px; }
+        }
+        // Segundo passe: renderizar
+        pts.forEach(function(p,i){
+          var isLast = i===pts.length-1;
+          var r = isLast ? 5 : 3;
+          out += '<circle cx="'+p[0]+'" cy="'+p[1]+'" r="'+r+'" fill="'+(isLast?cor:'#fff')+'" stroke="'+cor+'" stroke-width="'+(isLast?2:1.5)+'"/>';
+          if(showArr[i]){
+            out += '<text x="'+p[0]+'" y="'+(+p[1]-8)+'" text-anchor="middle" font-size="9" font-weight="'+(isLast?'bold':'normal')+'" fill="'+(isLast?cor:'#6b7280')+'">'+vals[i]+'</text>';
+          }
+        });
+        return out;
+      })()
+    + '</svg>';
+
+  // ── INSIGHT automático da evolução
+  var insightTxt = '';
+  var insightCor = '#6b7280';
+  var insightIc = 'ℹ️';
+  if(vals.length >= 3){
+    // Comparar média da primeira metade vs segunda metade
+    var mid = Math.floor(vals.length/2);
+    var mediaIni = vals.slice(0,mid).reduce(function(s,v){return s+v;},0)/mid;
+    var mediaFim = vals.slice(mid).reduce(function(s,v){return s+v;},0)/(vals.length-mid);
+    var varPct = mediaIni>0 ? Math.round((mediaFim-mediaIni)/mediaIni*100) : 0;
+
+    // Constância: desvio padrão relativo
+    var media = vals.reduce(function(s,v){return s+v;},0)/vals.length;
+    var desvio = Math.sqrt(vals.reduce(function(s,v){return s+Math.pow(v-media,2);},0)/vals.length);
+    var cv = media>0 ? desvio/media : 0; // coeficiente de variação
+
+    if(varPct >= 10){
+      insightIc = '📈'; insightCor = '#0F6E56';
+      insightTxt = 'Tendência de crescimento: média recente '+n(Math.round(mediaFim))+' pç/dia vs '+n(Math.round(mediaIni))+' no início do período (+'+varPct+'%).';
+    } else if(varPct <= -10){
+      insightIc = '📉'; insightCor = '#A32D2D';
+      insightTxt = 'Queda de rendimento: média recente '+n(Math.round(mediaFim))+' pç/dia vs '+n(Math.round(mediaIni))+' no início ('+varPct+'%). Vale acompanhar de perto.';
+    } else {
+      insightIc = '➡️'; insightCor = '#854F0B';
+      insightTxt = 'Produção estável no período. Média de '+n(Math.round(media))+' pç/dia com variação de '+Math.round(cv*100)+'%.';
+    }
+
+    if(cv < 0.12){
+      insightTxt += ' Alta consistência — colaboradora muito regular.';
+    } else if(cv > 0.25){
+      insightTxt += ' Produção irregular — oscila bastante entre os dias.';
+    }
+
+    if(pctMeta !== null){
+      if(pctMeta >= 100) insightTxt += ' ✅ Acima da meta ('+pctMeta+'%).';
+      else if(pctMeta >= 85) insightTxt += ' Próxima da meta ('+pctMeta+'%) — pequeno esforço para alcançar.';
+      else insightTxt += ' Abaixo da meta ('+pctMeta+'%) — requer atenção.';
+    }
+  }
+
+  // ── MONTAR FICHA seguindo o layout do escopo
+  var ctIcone = infoC.contratacao==='FIXO'?'🏠':infoC.contratacao==='TESTE'?'🧪':'';
+  var h = '';
+
+  // Título da ficha
+  h += '<div style="background:#fff;border:2px solid '+cor+'33;border-radius:14px;overflow:hidden;margin-top:4px;">';
+
+  // Header nome
+  h += '<div style="background:'+cor+';padding:14px 18px;display:flex;align-items:center;gap:12px;">'
+    + '<div style="width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:900;color:#fff;border:2px solid rgba(255,255,255,.5);flex-shrink:0;">'+ini(nome)+'</div>'
+    + '<div style="flex:1;">'
+    +   '<div style="font-size:15px;font-weight:900;color:#fff;">'+nome+'</div>'
+    +   '<div style="font-size:11px;color:rgba(255,255,255,.8);">'+(ctIcone?ctIcone+' ':'')+aL(area)+(posRanking?' · #'+posRanking+' no ranking':'')+'</div>'
+    + '</div>'
+    + '<div style="text-align:right;">'
+    +   '<div style="font-size:24px;font-weight:900;color:#fff;">'+n(mediaDia)+'</div>'
+    +   '<div style="font-size:10px;color:rgba(255,255,255,.7);">pç/dia</div>'
+    +   (pctMeta!==null?'<div style="font-size:11px;background:rgba(0,0,0,.2);color:#fff;padding:1px 8px;border-radius:8px;font-weight:700;margin-top:2px;">'+pctMeta+'% meta</div>':'')
+    + '</div>'
+    + '</div>';
+
+  // GRÁFICO — linha inteira
+  h += '<div style="padding:14px 18px 8px;background:var(--lav-l);border-bottom:1px solid var(--brd);">';
+  h += '<div style="font-size:10px;font-weight:800;color:var(--txt-s);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">📊 Evolução de produtividade</div>';
+  h += svgStr;
+  if(diasOrdem.length>1){
+    h += '<div style="display:flex;justify-content:space-between;font-size:9px;color:var(--txt-s);margin-top:2px;">'
+      + '<span>'+fb(diasOrdem[0])+'</span><span>'+fb(diasOrdem[diasOrdem.length-1])+'</span></div>';
+  }
+  // Insight da evolução
+  if(insightTxt){
+    h += '<div style="display:flex;align-items:flex-start;gap:8px;margin-top:10px;padding:8px 10px;border-radius:8px;background:#fff;">'
+      + '<span style="font-size:15px;flex-shrink:0;">'+insightIc+'</span>'
+      + '<span style="font-size:11px;color:'+insightCor+';font-weight:600;line-height:1.5;">'+insightTxt+'</span>'
+      + '</div>';
+  }
+  h += '</div>';
+
+  // 3 COLUNAS
+  h += '<div style="display:grid;grid-template-columns:220px 1fr 220px;gap:0;border-bottom:1px solid var(--brd);">';
+
+  // COLUNA ESQUERDA
+  h += '<div style="padding:14px 16px;border-right:1px solid var(--brd);">';
+
+  // Complexidade
+  h += '<div style="font-size:10px;font-weight:800;color:var(--txt-s);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">🎯 Complexidade</div>';
+  if(cClassif>0){
+    [[pAlto,'ALTO','#fee2e2','#991b1b'],[pMedio,'MÉDIO','#fef3c7','#854d0e'],[pBaixo,'BAIXO','#dcfce7','#166534']].forEach(function(x){
+      if(!x[0]) return;
+      h += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;">'
+        + '<div style="width:36px;height:36px;border-radius:8px;background:'+x[2]+';display:flex;align-items:center;justify-content:center;flex-direction:column;flex-shrink:0;">'
+        +   '<div style="font-size:13px;font-weight:900;color:'+x[3]+';">'+x[0]+'%</div>'
+        + '</div>'
+        + '<span style="font-size:11px;font-weight:700;color:'+x[3]+';">'+x[1]+'</span>'
+        + '</div>';
+    });
+  } else {
+    h += '<div style="font-size:11px;color:var(--txt-s);">Sem dados de complexidade</div>';
+  }
+
+  // Posição no ranking
+  h += '<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--brd);">';
+  h += '<div style="font-size:10px;font-weight:800;color:var(--txt-s);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">📍 Ranking da área</div>';
+  h += '<div style="font-size:22px;font-weight:900;color:'+cor+';">#'+posRanking+'</div>';
+  h += '<div style="font-size:10px;color:var(--txt-s);">de '+ranking.length+' em '+aL(area)+'</div>';
+  h += '</div>';
+
+  // Outras áreas
+  if(outrasAreas.length){
+    h += '<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--brd);">';
+    h += '<div style="font-size:10px;font-weight:800;color:var(--txt-s);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">🔄 Outras áreas</div>';
+    outrasAreas.forEach(function(a){
+      h += '<div style="font-size:11px;color:var(--txt);padding:2px 0;">'+a+'</div>';
+    });
+    h += '</div>';
+  }
+  h += '</div>'; // fim col esquerda
+
+  // COLUNA CENTRAL — peças por modelo+cor
+  h += '<div style="padding:14px 16px;border-right:1px solid var(--brd);">';
+  h += '<div style="font-size:10px;font-weight:800;color:var(--txt-s);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">📦 Peças processadas — modelo · cor</div>';
+  topModCor.slice(0,15).forEach(function(k){
+    var pm = porModCor[k];
+    var mNorm = pm.mod.toUpperCase().trim().replace(/\s*[—\-]\s*/g,' - ');
+    var cv2=(complexMap[mNorm]||complexMap[mNorm.split(' - ')[0].trim()]||'').toUpperCase();
+    var cBadge = cv2==='ALTO'?'background:#fee2e2;color:#991b1b':cv2==='MÉDIO'||cv2==='MEDIO'?'background:#fef3c7;color:#854d0e':cv2==='BAIXO'?'background:#dcfce7;color:#166534':'';
+    var cvLabel = cv2==='ALTO'?'Alto':cv2==='MÉDIO'||cv2==='MEDIO'?'Médio':cv2==='BAIXO'?'Baixo':'';
+    var pct = Math.round(pm.tot/totalGeral*100);
+    var barW = Math.round(pm.tot/porModCor[topModCor[0]].tot*100);
+    h += '<div style="margin-bottom:5px;">'
+      + '<div style="display:flex;align-items:center;gap:4px;margin-bottom:2px;">'
+      +   '<span style="font-size:11px;font-weight:700;color:var(--txt);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+pm.mod+(pm.cor?' <span style="color:var(--txt-s);font-weight:400;">'+pm.cor+'</span>':'')+'</span>'
+      +   (cvLabel?'<span style="font-size:9px;font-weight:700;padding:1px 4px;border-radius:4px;'+cBadge+';flex-shrink:0;">'+cvLabel+'</span>':'')
+      +   '<span style="font-size:10px;font-weight:800;color:'+cor+';width:36px;text-align:right;flex-shrink:0;">'+n(pm.tot)+'</span>'
+      +   '<span style="font-size:9px;color:var(--txt-s);width:28px;text-align:right;flex-shrink:0;">'+pct+'%</span>'
+      + '</div>'
+      + '<div style="height:4px;background:var(--lav-l);border-radius:2px;">'
+      +   '<div style="height:4px;background:'+cor+';border-radius:2px;width:'+barW+'%;"></div>'
+      + '</div>'
+      + '</div>';
+  });
+  h += '</div>'; // fim col central
+
+  // COLUNA DIREITA — especialidade por modelo
+  h += '<div style="padding:14px 16px;">';
+  h += '<div style="font-size:10px;font-weight:800;color:var(--txt-s);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">⭐ Especialidade por modelo</div>';
+  topMods.slice(0,10).forEach(function(mod,mi){
+    var mNorm = mod.toUpperCase().trim().replace(/\s*[—\-]\s*/g,' - ');
+    var cv2=(complexMap[mNorm]||complexMap[mNorm.split(' - ')[0].trim()]||'').toUpperCase();
+    var cBadge = cv2==='ALTO'?'background:#fee2e2;color:#991b1b':cv2==='MÉDIO'||cv2==='MEDIO'?'background:#fef3c7;color:#854d0e':cv2==='BAIXO'?'background:#dcfce7;color:#166534':'';
+    var cvLabel = cv2==='ALTO'?'Alto':cv2==='MÉDIO'||cv2==='MEDIO'?'Médio':cv2==='BAIXO'?'Baixo':'';
+    var barW = Math.round(porMod[mod].tot/porMod[topMods[0]].tot*100);
+    h += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">'
+      + '<span style="font-size:10px;color:var(--txt-s);width:14px;flex-shrink:0;">'+(mi+1)+'.</span>'
+      + '<div style="flex:1;min-width:0;">'
+      +   '<div style="display:flex;align-items:center;gap:4px;margin-bottom:2px;">'
+      +     '<span style="font-size:11px;font-weight:700;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+mod+'</span>'
+      +     (cvLabel?'<span style="font-size:8px;font-weight:700;padding:1px 4px;border-radius:4px;'+cBadge+';flex-shrink:0;">'+cvLabel+'</span>':'')
+      +   '</div>'
+      +   '<div style="height:5px;background:var(--lav-l);border-radius:3px;">'
+      +     '<div style="height:5px;background:'+cor+';border-radius:3px;width:'+barW+'%;"></div>'
+      +   '</div>'
+      + '</div>'
+      + '<span style="font-size:10px;font-weight:800;color:'+cor+';width:40px;text-align:right;flex-shrink:0;">'+n(porMod[mod].tot)+'</span>'
+      + '</div>';
+  });
+  h += '</div>'; // fim col direita
+  h += '</div>'; // fim grid 3 colunas
+  h += '</div>'; // fim card ficha
+
+  // GRAVAR NO perfCompView
+  var cv = document.getElementById('perfCompView');
+  if(cv){
+    cv.innerHTML = h;
+    cv.style.display = 'block';
+    setTimeout(function(){ cv.scrollIntoView({behavior:'smooth',block:'start'}); }, 50);
+  }
+}
+
+// ── BUSCA POR MODELO NA PERFORMANCE ──────────────────────────
+var _buscaAreaFiltro = 'Todos';
+
+function setBuscaArea(btn){
+  _buscaAreaFiltro = btn.getAttribute('data-area');
+  document.querySelectorAll('.baf-btn').forEach(function(b){
+    var ativo = b===btn;
+    b.style.background = ativo ? 'var(--roxo)' : '#fff';
+    b.style.color = ativo ? '#fff' : 'var(--txt)';
+    b.style.fontWeight = ativo ? '700' : 'normal';
+  });
+  // Re-executa busca com novo filtro
+  var q = document.getElementById('buscaModelo').value;
+  if(q) buscarPorModelo(q);
+}
+
+function areaPrincipalColab(col, base){
+  // Prioridade 1: área definida manualmente na col G da planilha
+  var info = _tiposColab[col.toUpperCase()] || {};
+  if(info.areaPrincipal) return info.areaPrincipal;
+  // Prioridade 2: cálculo automático por maior produção total
+  var tots = {};
+  base.filter(function(r){ return r.col===col; }).forEach(function(r){
+    tots[r.tipo] = (tots[r.tipo]||0) + r.tot;
+  });
+  return Object.keys(tots).sort(function(a,b){ return tots[b]-tots[a]; })[0]||'';
+}
+
+function buscarPorModelo(q){
+  var el = document.getElementById('resultBuscaModelo');
+  if(!q || q.trim().length < 2){ el.style.display='none'; return; }
+  var qNorm = q.trim().toUpperCase();
+  var base = baseFiltrada();
+  var complexMap = window._complexMap||{};
+
+  // Filtrar registros cujo modelo contém a busca
+  var recs = base.filter(function(r){
+    return r.mod.toUpperCase().indexOf(qNorm)>=0;
+  });
+
+  if(!recs.length){
+    el.innerHTML='<div style="padding:16px;text-align:center;color:var(--txt-s);background:#fff;border:1px solid var(--brd);border-radius:10px;">Nenhum resultado para "'+q+'"</div>';
+    el.style.display='block'; return;
+  }
+
+  var modelos = {};
+  recs.forEach(function(r){ modelos[r.mod]=true; });
+  var html = '<div style="background:#fff;border:1px solid var(--brd);border-radius:10px;overflow:hidden;">';
+  html += '<div style="padding:10px 16px;background:var(--lav-l);border-bottom:1px solid var(--brd);font-size:11px;font-weight:800;color:var(--roxo);">🔍 Resultados para "'+q+'" — do maior para o menor</div>';
+
+  Object.keys(modelos).forEach(function(mod){
+    var mRecs = recs.filter(function(r){ return r.mod===mod; });
+    var mNorm = mod.toUpperCase().trim().replace(/\s*[—\-]\s*/g,' - ');
+    var cv2=(complexMap[mNorm]||complexMap[mNorm.split(' - ')[0].trim()]||'').toUpperCase();
+    var cBadge=cv2==='ALTO'?'background:#fee2e2;color:#991b1b':cv2==='MÉDIO'||cv2==='MEDIO'?'background:#fef3c7;color:#854d0e':cv2==='BAIXO'?'background:#dcfce7;color:#166534':'';
+    var cvLabel=cv2==='ALTO'?'Alto':cv2==='MÉDIO'||cv2==='MEDIO'?'Médio':cv2==='BAIXO'?'Baixo':'';
+
+    // Agrupar por colaboradora — área principal (onde mais dias trabalhou)
+    var porColab = {};
+    mRecs.forEach(function(r){
+      if(!porColab[r.col]) porColab[r.col]={tot:0,dias:new Set()};
+      porColab[r.col].tot+=r.tot; porColab[r.col].dias.add(r.ds);
+    });
+
+    // Calcular área principal de cada colaboradora
+    Object.keys(porColab).forEach(function(col){
+      porColab[col].area = areaPrincipalColab(col, base);
+    });
+
+    // Aplicar filtro de área se ativo
+    var ranking = Object.keys(porColab);
+    if(_buscaAreaFiltro !== 'Todos'){
+      ranking = ranking.filter(function(col){ return porColab[col].area === _buscaAreaFiltro; });
+    }
+    if(!ranking.length) return;
+
+    ranking = ranking.sort(function(a,b){ return porColab[b].tot-porColab[a].tot; });
+    var maxTot = porColab[ranking[0]].tot||1;
+
+    html += '<div style="padding:12px 16px;border-bottom:1px solid var(--lav-l);">';
+    html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">'
+      +'<span style="font-size:13px;font-weight:900;color:var(--txt);">'+mod+'</span>'
+      +(cvLabel?'<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px;'+cBadge+'">'+cvLabel+'</span>':'')
+      +'<span style="font-size:11px;color:var(--txt-s);">'+ranking.length+' colaboradora(s)</span>'
+      +'</div>';
+
+    ranking.forEach(function(col,i){
+      var info=porColab[col];
+      var media=Math.round(info.tot/(info.dias.size||1));
+      var cor=corArea(info.area);
+      var infoC=_tiposColab[col.toUpperCase()]||{};
+      var icone=infoC.contratacao==='FIXO'?'🏠':infoC.contratacao==='TESTE'?'🧪':'';
+      var barW=Math.round(info.tot/maxTot*100);
+      var medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':'';
+      html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">'
+        +'<span style="font-size:12px;width:24px;flex-shrink:0;text-align:center;">'+(medal||(i+1)+'.')+'</span>'
+        +'<div style="width:26px;height:26px;border-radius:50%;background:'+cor+';display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;color:#fff;flex-shrink:0;">'+ini(col)+'</div>'
+        +'<span style="font-size:11px;font-weight:700;color:var(--txt);width:130px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+(icone?icone+' ':'')+col+'</span>'
+        +'<span style="font-size:10px;color:var(--txt-s);width:80px;flex-shrink:0;">'+aL(info.area)+'</span>'
+        +'<div style="flex:1;height:8px;background:var(--lav-l);border-radius:4px;overflow:hidden;"><div style="height:8px;background:'+cor+';border-radius:4px;width:'+barW+'%;"></div></div>'
+        +'<span style="font-size:11px;font-weight:800;color:'+cor+';width:50px;text-align:right;flex-shrink:0;">'+n(info.tot)+'</span>'
+        +'<span style="font-size:10px;color:var(--txt-s);width:55px;text-align:right;flex-shrink:0;">'+media+'/dia</span>'
+        +'</div>';
+    });
+    html += '</div>';
+  });
+  html += '</div>';
+  el.innerHTML=html; el.style.display='block';
+}
+
+// ── COMPARATIVO VISUAL ────────────────────────────────────────
+function togglePerfCompV3(col, el, area){
+  if(_perfCompSet.has(col)){
+    _perfCompSet.delete(col);
+  } else {
+    if(_perfCompSet.size>=4){ toast('Máximo 4 para comparar'); return; }
+    _perfCompSet.add(col);
+  }
+  // Atualiza apenas o comparativo embaixo — sem re-renderizar o ranking inteiro
+  if(_perfCompSet.size>=2){
+    renderPerfCompView(area);
+    var cv = document.getElementById('perfCompView');
+    if(cv) cv.style.display='block';
+  } else {
+    var cv = document.getElementById('perfCompView');
+    if(cv){ cv.style.display='none'; cv.innerHTML=''; }
+  }
+}
+
+function renderPerfCompView(area){
+  var el = document.getElementById('perfCompView');
+  if(!el || _perfCompSet.size<2) return;
+
+  var base = window._base || filt;
+  var src  = base.filter(function(r){ return r.tipo===area; });
+  var meta = METAS_IND[area]||0;
+  var cor  = corArea(area);
+  var nomes = Array.from(_perfCompSet);
+
+  // Dados por colaboradora
+  var stats = nomes.map(function(nome,i){
+    var recs = src.filter(function(r){ return r.col===nome; });
+    var tot  = recs.reduce(function(s,r){ return s+r.tot; }, 0);
+    var dias = new Set(recs.map(function(r){ return r.ds; })).size || 1;
+    var media = Math.round(tot/dias);
+    // Semanas
+    var sem = {};
+    recs.forEach(function(r){
+      var dt=r.data,dow=dt.getDay(),ini2=new Date(dt);
+      ini2.setDate(dt.getDate()-dow);
+      var sw=fd(ini2);
+      if(!sem[sw]) sem[sw]={tot:0,dias:new Set()};
+      sem[sw].tot+=r.tot; sem[sw].dias.add(r.ds);
+    });
+    var swK = Object.keys(sem).sort().slice(-6);
+    var swV = swK.map(function(sw){ return Math.round(sem[sw].tot/(sem[sw].dias.size||1)); });
+    var tend = swV.length<2?'→':swV[swV.length-1]>swV[0]*1.05?'↑ crescendo':swV[swV.length-1]<swV[0]*0.95?'↓ caindo':'→ estável';
+    var infoC = _tiposColab[nome.toUpperCase()]||{};
+    return { nome:nome, tot:tot, dias:dias, media:media,
+      pctMeta:meta?Math.round(media/meta*100):null, cor:_perfCompCores[i%_perfCompCores.length],
+      contratacao:infoC.contratacao||'', swK:swK, swV:swV, tend:tend };
+  }).sort(function(a,b){ return b.media-a.media; });
+
+  var maxMedia = Math.max.apply(null, stats.map(function(s){ return s.media; }))||1;
+  var allDays  = Array.from(new Set(src.map(function(r){ return r.ds; }))).sort().slice(-20);
+
+  // Dados por dia por colaboradora para o gráfico
+  var porColDia = {};
+  stats.forEach(function(s){ porColDia[s.nome]={}; });
+  src.forEach(function(r){
+    if(porColDia[r.col]!==undefined)
+      porColDia[r.col][r.ds]=(porColDia[r.col][r.ds]||0)+r.tot;
+  });
+
+  var html = '<div style="background:#fff;border:1px solid var(--brd);border-radius:14px;padding:16px 18px;margin-bottom:14px;">';
+  html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">'
+    + '<div style="font-size:10px;font-weight:800;color:'+cor+';text-transform:uppercase;letter-spacing:.06em;">⚖️ Comparativo — '+nomes.join(' × ')+'</div>'
+    + '<button onclick="_perfCompSet.clear();renderPerfDeArea(\''+area+'\')" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--txt-s);font-weight:600;">✕ Limpar</button>'
+    + '</div>';
+
+  // Chips
+  html += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">';
+  stats.forEach(function(s){
+    var em = s.contratacao==='FIXO'?'🏠 ':s.contratacao==='TESTE'?'🧪 ':'';
+    html += '<div style="padding:5px 14px;border-radius:16px;background:'+s.cor+';color:#fff;font-size:12px;font-weight:700;">'+em+s.nome+'</div>';
+  });
+  html += '</div>';
+
+  // GRÁFICO DE LINHA (SVG manual, sem Chart.js para evitar IDs duplicados)
+  html += '<div style="margin-bottom:14px;">';
+  html += '<div style="font-size:10px;font-weight:700;color:var(--txt-s);margin-bottom:6px;">Produção por dia (últimos 20 dias)</div>';
+
+  var svgW = 600, svgH = 120, padL = 40, padR = 10, padT = 10, padB = 20;
+  var w = svgW-padL-padR, h = svgH-padT-padB;
+  var maxVal = Math.max.apply(null, allDays.map(function(d){
+    return stats.reduce(function(mx,s){ return Math.max(mx,porColDia[s.nome][d]||0); }, 0);
+  }))||1;
+  var dx = allDays.length>1?w/(allDays.length-1):w;
+
+  html += '<svg viewBox="0 0 '+svgW+' '+svgH+'" style="width:100%;height:auto;">';
+
+  // Linhas guia
+  [0,.25,.5,.75,1].forEach(function(f){
+    var y=padT+h*(1-f);
+    html += '<line x1="'+padL+'" y1="'+y+'" x2="'+(svgW-padR)+'" y2="'+y+'" stroke="var(--lav)" stroke-width="0.5"/>';
+    if(f>0) html += '<text x="'+(padL-4)+'" y="'+(y+3)+'" text-anchor="end" font-size="8" fill="var(--txt-s)">'+n(Math.round(maxVal*f))+'</text>';
+  });
+
+  // Linhas por colaboradora
+  stats.forEach(function(s){
+    var pts = allDays.map(function(d,i){
+      var v=porColDia[s.nome][d]||0;
+      return [(padL+i*dx),(padT+h*(1-v/maxVal))];
+    }).filter(function(p,i){ return (porColDia[s.nome][allDays[i]]||0)>0; });
+
+    if(pts.length<2) return;
+    var path='M'+pts[0][0]+','+pts[0][1];
+    for(var k=1;k<pts.length;k++) path+=' L'+pts[k][0]+','+pts[k][1];
+    html += '<path d="'+path+'" fill="none" stroke="'+s.cor+'" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>';
+
+    pts.forEach(function(p){
+      html += '<circle cx="'+p[0]+'" cy="'+p[1]+'" r="3" fill="'+s.cor+'"/>';
+    });
+  });
+
+  // Labels eixo X (a cada 4 dias)
+  allDays.forEach(function(d,i){
+    if(i%4!==0&&i!==allDays.length-1) return;
+    var x=padL+i*dx;
+    var parts=d.split('-');
+    html += '<text x="'+x+'" y="'+(svgH-2)+'" text-anchor="middle" font-size="8" fill="var(--txt-s)">'+parts[2]+'/'+parts[1]+'</text>';
+  });
+
+  // Meta line
+  if(meta){
+    var ym=padT+h*(1-meta/maxVal);
+    if(ym>padT&&ym<padT+h){
+      html+='<line x1="'+padL+'" y1="'+ym+'" x2="'+(svgW-padR)+'" y2="'+ym+'" stroke="#592C95" stroke-width="1" stroke-dasharray="4,2" opacity=".4"/>';
+    }
+  }
+  html += '</svg>';
+  html += '</div>';
+
+  // Tabela comparativa
+  html += '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;">';
+  html += '<thead><tr><th style="padding:8px 12px;text-align:left;background:var(--roxo-esc);color:#fff;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;">Métrica</th>';
+  stats.forEach(function(s){
+    html += '<th style="padding:8px 12px;text-align:right;background:'+s.cor+';color:#fff;font-weight:700;font-size:12px;">'+s.nome+'</th>';
+  });
+  html += '</tr></thead><tbody>';
+
+  var linhas = [
+    ['Total peças',    function(s){ return n(s.tot); },          true],
+    ['Dias ativos',    function(s){ return s.dias+'d'; },        true],
+    ['Média/dia',      function(s){ return n(s.media); },        true],
+    ['% da meta',      function(s){ return s.pctMeta!==null?s.pctMeta+'%':'—'; }, true],
+    ['Tipo',           function(s){ return s.contratacao||'—'; }, false],
+    ['Tendência',      function(s){ return s.tend; },            false],
+  ];
+
+  linhas.forEach(function(l,li){
+    html += '<tr style="background:'+(li%2?'var(--lav-l)':'#fff')+'">';
+    html += '<td style="padding:7px 12px;font-weight:700;color:var(--txt-s);">'+l[0]+'</td>';
+    var nums = stats.map(function(s){ return parseFloat((l[1](s)||'').replace(/\./g,'').replace(',','.'))||0; });
+    var mx2  = l[2]?Math.max.apply(null,nums):0;
+    stats.forEach(function(s,si){
+      var val = l[1](s);
+      var best = l[2]&&nums[si]===mx2&&mx2>0&&nums.filter(function(x){return x===mx2;}).length===1;
+      html += '<td style="padding:7px 12px;text-align:right;font-weight:'+(best?'800':'600')+';color:'+(best?s.cor:'var(--txt)')+';">'+val+(best?' ⭐':'')+'</td>';
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table></div>';
+
+  // Insight
+  var lider = stats[0];
+  html += '<div style="background:var(--lav-l);border-radius:10px;padding:12px 14px;margin-top:12px;">';
+  html += '<div style="font-size:10px;font-weight:800;color:var(--roxo);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">💡 Análise rápida</div>';
+  html += '<div style="font-size:12px;color:var(--txt);padding:3px 0"><strong>'+lider.nome+'</strong> lidera com <strong>'+n(lider.media)+'</strong> pç/dia</div>';
+  stats.slice(1).forEach(function(s){
+    var dif = lider.media-s.media;
+    var pct2 = lider.media?Math.round(dif/lider.media*100):0;
+    html += '<div style="font-size:12px;color:var(--txt);padding:3px 0;border-top:1px solid var(--lav)"><strong>'+s.nome+'</strong>: '+pct2+'% abaixo de '+lider.nome+' em média diária</div>';
+  });
+  stats.forEach(function(s){
+    if(s.pctMeta!==null){
+      var em = s.pctMeta>=100?'✅':s.pctMeta>=80?'⚠️':'❌';
+      html += '<div style="font-size:12px;color:var(--txt);padding:3px 0;border-top:1px solid var(--lav)">'+em+' <strong>'+s.nome+'</strong>: '+s.pctMeta+'% da meta de '+n(meta)+' pç/dia</div>';
+    }
+  });
+  html += '</div>';
+
+  html += '</div>'; // fim card comparativo
+  el.innerHTML = html;
+}
+
+// ── DETALHE INDIVIDUAL ────────────────────────────────────────
+function abrirPerfDetalhe(nome){
+  _perfDetalheNome = nome;
+  var base = window._base || filt;
+  var recs = base.filter(function(r){ return r.col===nome; });
+
+  var detEl = document.getElementById('perfDetalhe');
+  if(!recs.length){
+    detEl.innerHTML='<div style="padding:24px;text-align:center;color:var(--txt-s)">Sem dados para '+nome+'</div>';
+    detEl.style.display='block';
+    return;
+  }
+
+  var totalPcs = recs.reduce(function(s,r){ return s+r.tot; }, 0);
+  var diasSet  = new Set(recs.map(function(r){ return r.ds; }));
+  var datas    = Array.from(diasSet).sort();
+  var infoC    = _tiposColab[nome.toUpperCase()]||{};
+  var ctIcone  = infoC.contratacao==='FIXO'?'🏠 FIXO':infoC.contratacao==='TESTE'?'🧪 EM TESTE':'';
+  var ctCor    = infoC.contratacao==='FIXO'?'#0F6E56':infoC.contratacao==='TESTE'?'#854F0B':'var(--txt-s)';
+
+  // Por área
+  var porArea = {};
+  recs.forEach(function(r){
+    if(!porArea[r.tipo]) porArea[r.tipo]={tot:0,dias:new Set()};
+    porArea[r.tipo].tot+=r.tot; porArea[r.tipo].dias.add(r.ds);
+  });
+  var areaPrincipal = (function(){
+    var info = _tiposColab[nome.toUpperCase()] || {};
+    if(info.areaPrincipal) return info.areaPrincipal;
+    return Object.keys(porArea).sort(function(a,b){ return porArea[b].tot-porArea[a].tot; })[0]||'';
+  })();
+  var cor = corArea(areaPrincipal);
+  var outrasAreas = Object.keys(porArea).filter(function(a){ return a!==areaPrincipal; });
+  var mediaAreaP  = porArea[areaPrincipal]?Math.round(porArea[areaPrincipal].tot/(porArea[areaPrincipal].dias.size||1)):0;
+  var metaAreaP   = METAS_IND[areaPrincipal]||0;
+  var pctMetaP    = metaAreaP?Math.round(mediaAreaP/metaAreaP*100):null;
+  var corMetaP    = pctMetaP===null?cor:pctMetaP>=100?'#0F6E56':pctMetaP>=80?'#854F0B':'#A32D2D';
+
+  // Semanas
+  var semanas = {};
+  recs.forEach(function(r){
+    var dt=r.data,dow=dt.getDay(),ini2=new Date(dt);
+    ini2.setDate(dt.getDate()-dow);
+    var sw=fd(ini2);
+    if(!semanas[sw]) semanas[sw]={tot:0,dias:new Set()};
+    semanas[sw].tot+=r.tot; semanas[sw].dias.add(r.ds);
+  });
+  var swK  = Object.keys(semanas).sort().slice(-8);
+  var swV  = swK.map(function(sw){ return Math.round(semanas[sw].tot/(semanas[sw].dias.size||1)); });
+  var maxSW= Math.max.apply(null,swV)||1;
+  var tend = swV.length<2?'—':swV[swV.length-1]>swV[0]*1.05?'📈 Crescente':swV[swV.length-1]<swV[0]*0.95?'📉 Decrescente':'➡️ Estável';
+
+  // Top modelos
+  var modMap = {};
+  recs.forEach(function(r){
+    var nm=r.mod.split(' — ')[0].trim();
+    if(!modMap[nm]) modMap[nm]=0; modMap[nm]+=r.tot;
+  });
+  var topMods = Object.entries(modMap).sort(function(a,b){ return b[1]-a[1]; }).slice(0,5);
+  var totTopM = topMods.reduce(function(s,m){ return s+m[1]; },0);
+
+  // Revisão
+  var revRecs = recs.filter(function(r){ return r.tipo==='Revisão'; });
+  var totRev  = revRecs.reduce(function(s,r){ return s+r.tot; }, 0);
+  var totDef  = revRecs.reduce(function(s,r){ return s+r.baz+r.con+r.suj; }, 0);
+
+  // Complexidade
+  var complexMap = window._complexMap||{};
+  var comp = {alto:0,medio:0,baixo:0,sem:0};
+  recs.filter(function(r){ return TIPOS_ACAB.indexOf(r.tipo)>=0; }).forEach(function(r){
+    var modFull = r.mod.toUpperCase().trim().replace(/\s*[—\-]\s*/g,' - ');
+    var modCurto = modFull.split(' - ')[0].trim();
+    var cv=(complexMap[modFull]||complexMap[modCurto]||'').toUpperCase();
+    if(cv==='ALTO') comp.alto+=r.tot;
+    else if(cv==='MÉDIO'||cv==='MEDIO'||cv==='M\u00C9DIO') comp.medio+=r.tot;
+    else if(cv==='BAIXO') comp.baixo+=r.tot;
+    else comp.sem+=r.tot;
+  });
+  var totalComp = comp.alto+comp.medio+comp.baixo+comp.sem;
+  var temComp   = (comp.alto+comp.medio+comp.baixo)>0;
+
+  // ── HTML ─────────────────────────────────────────────────────
+  var html = '<div style="background:#fff;border:1px solid var(--brd);border-radius:14px;overflow:hidden;margin-bottom:14px;">';
+
+  // Barra de voltar
+  var voltarLabel = _perfAreaAtiva==='__TODAS__'?'← Voltar para Visão Geral':'← Voltar para '+aL(_perfAreaAtiva);
+  html += '<div style="display:flex;align-items:center;gap:8px;padding:10px 16px;border-bottom:1px solid var(--lav-l);cursor:pointer;color:var(--roxo);font-size:12px;font-weight:700;background:var(--lav-l);" onclick="fecharPerfDetalhe()">'
+    + voltarLabel
+    + '</div>';
+
+  // Header
+  html += '<div style="background:linear-gradient(135deg,'+cor+','+cor+'cc);padding:18px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">'
+    + '<div style="width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;color:#fff;border:3px solid rgba(255,255,255,.4);flex-shrink:0;">'+ini(nome)+'</div>'
+    + '<div style="flex:1;">'
+    +   '<div style="font-size:20px;font-weight:900;color:#fff;">'+nome+'</div>'
+    +   (ctIcone?'<div style="display:inline-block;font-size:10px;font-weight:700;color:#fff;background:'+ctCor+';padding:2px 8px;border-radius:8px;margin-top:3px;">'+ctIcone+'</div>':'')
+    +   '<div style="font-size:11px;color:rgba(255,255,255,.7);margin-top:4px;">'+icArea(areaPrincipal)+' '+areaLabel(areaPrincipal)
+    +     (outrasAreas.length?' · apoia: '+outrasAreas.map(aL).join(', '):'')+'</div>'
+    +   '<div style="font-size:11px;color:rgba(255,255,255,.55);margin-top:2px;">'+datas[0]+' → '+datas[datas.length-1]+' · '+diasSet.size+' dias</div>'
+    + '</div>'
+    + '<div style="text-align:right;">'
+    +   '<div style="font-size:36px;font-weight:900;color:#fff;line-height:1;">'+n(totalPcs)+'</div>'
+    +   '<div style="font-size:11px;color:rgba(255,255,255,.6);">peças totais</div>'
+    + '</div>'
+    + '</div>';
+
+  // 4 KPIs
+  html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-bottom:1px solid var(--lav-l);">';
+  function kpiD(l,v,s){
+    return '<div style="padding:12px 14px;text-align:center;border-right:1px solid var(--lav-l);">'
+      +'<div style="font-size:9px;font-weight:700;color:var(--txt-s);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">'+l+'</div>'
+      +'<div style="font-size:16px;font-weight:800;color:var(--roxo);">'+v+'</div>'
+      +(s?'<div style="font-size:10px;color:var(--txt-s);">'+s+'</div>':'')
+      +'</div>';
+  }
+  html += kpiD('Média/dia',n(mediaAreaP)+(pctMetaP!==null?' <span style="font-size:11px;color:'+corMetaP+';">('+pctMetaP+'%)</span>':''),'área principal');
+  html += kpiD('Dias ativos',diasSet.size+'d',datas[0]+' → '+datas[datas.length-1]);
+  html += kpiD('Tendência',tend,'semanal');
+  html += kpiD('Outras áreas',outrasAreas.length>0?outrasAreas.map(aL).join(', '):'—','apoio');
+  html += '</div>';
+
+  html += '<div style="padding:16px 18px;">';
+
+  // Grid 2 colunas: desempenho por área + evolução semanal
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">';
+
+  // Áreas
+  html += '<div>';
+  html += '<div style="font-size:10px;font-weight:800;color:var(--roxo);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">📊 Desempenho por área</div>';
+  Object.keys(porArea).sort(function(a,b){ return porArea[b].tot-porArea[a].tot; }).forEach(function(area){
+    var d=porArea[area];
+    var dias2=d.dias.size||1;
+    var media2=Math.round(d.tot/dias2);
+    var m2=METAS_IND[area]||0;
+    var pm=m2?Math.round(media2/m2*100):null;
+    var cm=pm===null?corArea(area):pm>=100?'#0F6E56':pm>=80?'#854F0B':'#A32D2D';
+    var bp=m2?Math.min(Math.round((media2/m2)*100),120):100;
+    var isP=(area===areaPrincipal);
+    html += '<div style="padding:8px 10px;border-radius:8px;background:'+(isP?'var(--lav)':'var(--lav-l)')+';margin-bottom:6px;">'
+      + '<div style="display:flex;justify-content:space-between;margin-bottom:4px;">'
+      +   '<span style="font-size:11px;font-weight:800;color:var(--txt)">'+icArea(area)+' '+aL(area)+(isP?' 📌':'')+'</span>'
+      +   '<span style="font-size:11px;font-weight:800;color:'+cm+'">'+(pm!==null?pm+'%':'—')+'</span>'
+      + '</div>'
+      + '<div style="height:6px;background:rgba(0,0,0,.08);border-radius:3px;overflow:hidden;margin-bottom:4px;">'
+      +   '<div style="height:6px;background:'+corArea(area)+';border-radius:3px;width:'+Math.min(bp,100)+'%;"></div>'
+      + '</div>'
+      + '<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--txt-s);">'
+      +   '<span>'+dias2+'d trabalhados</span><span>'+n(media2)+' pç/dia</span>'+(m2?'<span>meta: '+n(m2)+'</span>':'')
+      + '</div></div>';
+  });
+  html += '</div>';
+
+  // Evolução semanal
+  html += '<div>';
+  html += '<div style="font-size:10px;font-weight:800;color:var(--roxo);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">📈 Evolução semanal</div>';
+  if(swK.length>1){
+    html += '<div style="display:flex;gap:3px;align-items:flex-end;height:80px;margin-bottom:4px;">';
+    swK.forEach(function(sw,i){
+      var h2=Math.max(6,Math.round((swV[i]/maxSW)*70));
+      var prev=i>0?swV[i-1]:swV[i];
+      var bc2=swV[i]>=prev*1.02?'#0F6E56':swV[i]<=prev*0.98?'#A32D2D':cor;
+      var dtP=sw.split('-');
+      html += '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;">'
+        + '<div style="font-size:8px;color:var(--txt-s)">'+n(swV[i])+'</div>'
+        + '<div style="height:'+h2+'px;width:100%;border-radius:3px 3px 0 0;background:'+bc2+';" title="'+sw+'"></div>'
+        + '<div style="font-size:8px;color:var(--txt-s)">'+dtP[2]+'/'+dtP[1]+'</div>'
+        + '</div>';
+    });
+    html += '</div>';
+    html += '<div style="font-size:11px;font-weight:700;color:var(--txt);text-align:center">'+tend+'</div>';
+  } else {
+    html += '<div style="font-size:11px;color:var(--txt-s);text-align:center;padding:20px 0">Dados insuficientes para tendência</div>';
+  }
+
+  // Complexidade
+  if(temComp){
+    html += '<div style="margin-top:12px;">';
+    html += '<div style="font-size:10px;font-weight:800;color:var(--roxo);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">🧩 Complexidade</div>';
+    [['Alto',comp.alto,'#A32D2D'],['Médio',comp.medio,'#854F0B'],['Baixo',comp.baixo,'#0F6E56']].filter(function(x){return x[1]>0;}).forEach(function(x){
+      var pct2=totalComp?Math.round((x[1]/totalComp)*100):0;
+      html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;">'
+        +'<span style="font-size:10px;font-weight:700;color:'+x[2]+';width:40px">'+x[0]+'</span>'
+        +'<div style="flex:1;height:10px;background:var(--lav-l);border-radius:5px;overflow:hidden;">'
+        +'<div style="height:10px;background:'+x[2]+';border-radius:5px;width:'+pct2+'%;"></div></div>'
+        +'<span style="font-size:10px;font-weight:700;color:var(--txt);width:30px;text-align:right">'+pct2+'%</span>'
+        +'</div>';
+    });
+    html += '</div>';
+  }
+  html += '</div>';
+  html += '</div>'; // fim grid
+
+  // Top modelos
+  html += '<div style="margin-bottom:14px;">';
+  html += '<div style="font-size:10px;font-weight:800;color:var(--roxo);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">🔝 Top modelos</div>';
+  html += '<div style="display:flex;flex-direction:column;gap:5px;">';
+  topMods.forEach(function(m,i){
+    var pct2=totTopM?Math.round((m[1]/totTopM)*100):0;
+    var cv=(complexMap[m[0].toUpperCase().trim().replace(/\s*[—\-]\s*/g,' - ')]||'').toUpperCase();
+    var cb=cv==='ALTO'?'#fee2e2;color:#991b1b':cv==='MÉDIO'||cv==='MEDIO'?'#fef3c7;color:#854d0e':cv==='BAIXO'?'#dcfce7;color:#166534':'';
+    var cvLabel=cv==='ALTO'?'Alto':cv==='MÉDIO'||cv==='MEDIO'?'Médio':cv==='BAIXO'?'Baixo':'';
+    html += '<div style="display:flex;align-items:center;gap:8px;">'
+      + '<span style="font-size:10px;color:var(--txt-s);width:16px">'+( i+1)+'.</span>'
+      + '<span style="font-size:11px;font-weight:700;color:var(--txt);width:150px;flex-shrink:0">'+m[0]+(cb?'<span style="font-size:9px;padding:1px 5px;border-radius:6px;margin-left:4px;background:'+cb+'">'+cvLabel+'</span>':'')+'</span>'
+      + '<div style="flex:1;height:10px;background:var(--lav-l);border-radius:5px;overflow:hidden;">'
+      +   '<div style="height:10px;background:'+cor+';border-radius:5px;width:'+pct2+'%;opacity:.8;"></div></div>'
+      + '<span style="font-size:11px;font-weight:700;color:'+cor+';width:50px;text-align:right">'+n(m[1])+'</span>'
+      + '</div>';
+  });
+  html += '</div></div>';
+
+  // Qualidade
+  if(totRev>0){
+    var pctDef=totRev?((totDef/totRev)*100).toFixed(1):0;
+    html += '<div style="background:#FFFBEB;border:1px solid #F59E0B;border-radius:10px;padding:12px 14px;">';
+    html += '<div style="font-size:10px;font-weight:800;color:#854F0B;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">🔍 Qualidade — como revisora</div>';
+    html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">';
+    function kpiQ(l,v,s){
+      return '<div style="background:#fff;border-radius:8px;padding:8px;text-align:center;">'
+        +'<div style="font-size:9px;font-weight:700;color:var(--txt-s);text-transform:uppercase;margin-bottom:3px">'+l+'</div>'
+        +'<div style="font-size:15px;font-weight:800;color:var(--roxo)">'+v+'</div>'
+        +(s?'<div style="font-size:9px;color:var(--txt-s)">'+s+'</div>':'')
+        +'</div>';
+    }
+    html += kpiQ('Peças revisadas',n(totRev),'no período');
+    html += kpiQ('Defeitos id.',n(totDef),pctDef+'% do revisado');
+    html += kpiQ('Status',totDef===0?'✅ Sem defeitos':pctDef<2?'👍 Baixo índice':pctDef<5?'⚠️ Atenção':'❌ Revisar','índice');
+    html += '</div></div>';
+  }
+
+  html += '</div></div>'; // fim padding + card
+
+  // Inserir detalhe diretamente no perfMainContent
+  var mc = document.getElementById('perfMainContent');
+  if(mc){
+    mc.style.display = 'block';
+    mc.innerHTML = html;
+    mc.scrollIntoView({behavior:'smooth', block:'start'});
+  }
+  // Ocultar perfDetalhe separado se existir
+  var det = document.getElementById('perfDetalhe');
+  if(det) det.style.display = 'none';
+}
+
+function fecharPerfDetalhe(){
+  _perfDetalheNome = null;
+  renderPerfMainContent(); // restaura o conteúdo anterior (área ou visão geral)
+}
+
+// Compatibilidade com iniciarPerfArea chamado de goTab
+function iniciarPerfArea(){
+  // Noop — tabs são criadas em renderPerfMainContent
+}
+function popularSelectPerf(){ /* noop */ }
+
+// goTab chama essas — manter compatibilidade
+function renderPerfConteudo(){ renderPerfMainContent(); }
+function renderPerfRank(){
+  if(typeof iniciarPerfArea==='function') iniciarPerfArea();
+}
+
 
 function toast(msg){
   var t=document.getElementById('toast');
