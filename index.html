@@ -277,6 +277,7 @@ td.mn{font-family:monospace;font-size:11px;color:var(--txt-s);}
     <button class="tab" onclick="goTab('qual',this)">⚠️ Qualidade</button>
     <button class="tab" onclick="goTab('falhas',this)">🔍 Controle de Falhas</button>
     <button class="tab" onclick="goTab('perf',this)">⭐ Performance Individual</button>
+    <button class="tab" onclick="goTab('efic',this)">⚡ Eficiência Produtiva</button>
   </div>
 
   <div class="tc active" id="tab-prod">
@@ -470,7 +471,112 @@ td.mn{font-family:monospace;font-size:11px;color:var(--txt-s);}
 
   </div>
 
+  <!-- ABA EFICIÊNCIA PRODUTIVA -->
+  <div class="tc" id="tab-efic">
+    <div id="eficLoadMsg" style="text-align:center;padding:40px 20px;color:var(--txt-s);font-size:13px;">
+      <div style="font-size:32px;margin-bottom:10px;">⚡</div>
+      <div id="eficLoadTxt">Clique em <strong>↺ Carregar Eficiência</strong> para carregar os dados de recebimento da produção.<br><small style="color:var(--txt-s);">Período analisado: a partir de 14/05/2026 (início do novo modelo de revisão)</small></div>
+      <button onclick="carregarEfic(true)" style="margin-top:16px;padding:9px 22px;background:var(--roxo);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">↺ Carregar Eficiência</button>
+    </div>
+    <div id="eficContent" style="display:none;">
+      <!-- Header com botão atualizar -->
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <span style="font-size:11px;color:var(--txt-s);">📅 Período: a partir de 14/05/2026 · novo modelo de revisão</span>
+        <button onclick="carregarEfic(true)" style="padding:6px 14px;background:var(--roxo);color:#fff;border:none;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;">↺ Atualizar Eficiência</button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;" id="eficKpis"></div>
+      <!-- Filtro por modelo -->
+      <div style="background:#fff;border:1px solid var(--brd);border-radius:10px;padding:8px 14px;margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+        <span style="font-size:12px;color:var(--txt-s);font-weight:700;">🔍 Filtrar modelo:</span>
+        <input id="eficFiltroMod" type="text" placeholder="ex: BRA 001, PÉROLA..." style="flex:1;border:none;outline:none;font-size:12px;font-family:inherit;color:var(--txt);" oninput="renderEficFiltrado()">
+        <button onclick="document.getElementById('eficFiltroMod').value='';renderEficFiltrado();" style="background:none;border:none;cursor:pointer;color:var(--txt-s);font-size:15px;">✕</button>
+        <span style="font-size:11px;color:var(--txt-s);" id="eficFiltroInfo"></span>
+      </div>
+      <!-- Cenários tabs -->
+      <div style="display:flex;gap:4px;margin-bottom:14px;">
+        <button id="eficTab1" onclick="setEficSubTab('rev')" style="padding:8px 18px;border-radius:8px 8px 0 0;font-size:12px;font-weight:700;cursor:pointer;border:1px solid var(--brd);border-bottom:none;background:var(--roxo);color:#fff;">🔍 Cenário Revisão</button>
+        <button id="eficTab2" onclick="setEficSubTab('lin')" style="padding:8px 18px;border-radius:8px 8px 0 0;font-size:12px;font-weight:700;cursor:pointer;border:1px solid var(--brd);border-bottom:none;background:#fff;color:var(--txt-s);">📦 Cenário Linha/Embalagem</button>
+        <button id="eficTab3" onclick="setEficSubTab('pend')" style="padding:8px 18px;border-radius:8px 8px 0 0;font-size:12px;font-weight:700;cursor:pointer;border:1px solid var(--brd);border-bottom:none;background:#fff;color:var(--txt-s);">⏳ OS Pendentes</button>
+      </div>
+      <!-- Cenário Revisão -->
+      <div id="eficSubRev">
+        <div class="g2" style="margin-bottom:14px;">
+          <div class="card">
+            <div class="ct">⏱ Tempo médio: Recebimento → Revisão <span id="eficRevInfo">—</span></div>
+            <div id="eficRevChart" style="position:relative;height:220px;"><canvas id="cEficRev"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="ct">📊 Top modelos — tempo de espera até revisão <span>dias médios · clique para detalhes</span></div>
+            <div id="eficRevModelos" style="max-height:220px;overflow-y:auto;"></div>
+          </div>
+        </div>
+        <div class="card" style="margin-bottom:14px;">
+          <div class="ct">🏆 Ranking de velocidade — Revisão <span>mais rápidos primeiro · clique para detalhes</span></div>
+          <div id="eficRevRanking" style="max-height:240px;overflow-y:auto;"></div>
+        </div>
+        <div class="card" style="margin-bottom:14px;">
+          <div class="ct">📋 Detalhe por modelo · cor — Revisão <span>tempo recebimento → revisão</span></div>
+          <div id="eficRevDetalhe"></div>
+        </div>
+      </div>
+      <!-- Cenário Linha -->
+      <div id="eficSubLin" style="display:none;">
+        <div class="g2" style="margin-bottom:14px;">
+          <div class="card">
+            <div class="ct">⏱ Tempo médio: Recebimento → Linha/Embalagem <span id="eficLinInfo">—</span></div>
+            <div id="eficLinChart" style="position:relative;height:220px;"><canvas id="cEficLin"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="ct">📊 Top modelos — tempo total até finalização <span>clique para detalhes</span></div>
+            <div id="eficLinModelos" style="max-height:220px;overflow-y:auto;"></div>
+          </div>
+        </div>
+        <div class="card" style="margin-bottom:14px;">
+          <div class="ct">🚀 Modelos de alta demanda <span>BRA 001 · BRA 002 e outros de giro acelerado</span></div>
+          <div id="eficAltaDemanda"></div>
+        </div>
+        <div class="card" style="margin-bottom:14px;">
+          <div class="ct">🏆 Ranking de velocidade — Linha/Embalagem <span>mais rápidos primeiro · clique para detalhes</span></div>
+          <div id="eficLinRanking" style="max-height:240px;overflow-y:auto;"></div>
+        </div>
+        <div class="card" style="margin-bottom:14px;">
+          <div class="ct">📋 Detalhe por modelo · cor — Linha/Embalagem <span>tempo recebimento → finalização</span></div>
+          <div id="eficLinDetalhe"></div>
+        </div>
+      </div>
+      <!-- OS Pendentes -->
+      <div id="eficSubPend" style="display:none;">
+        <div class="g2" style="margin-bottom:14px;">
+          <div class="card">
+            <div class="ct" style="color:var(--bad);">⏳ Pendentes de Revisão <span id="eficPendRevInfo">—</span></div>
+            <div id="eficPendRev"></div>
+          </div>
+          <div class="card">
+            <div class="ct" style="color:var(--c-lin);">📦 Pendentes de Linha/Embalagem <span id="eficPendLinInfo">—</span></div>
+            <div id="eficPendLin"></div>
+          </div>
+        </div>
+      </div>
+      <!-- Insight geral -->
+      <div class="card" id="eficInsightCard" style="margin-bottom:14px;">
+        <div class="ct">💡 Insights de Eficiência</div>
+        <div id="eficInsights" style="font-size:12px;line-height:1.7;color:var(--txt);"></div>
+      </div>
+    </div>
+  </div>
+
   <div class="footer"><strong>Pangeia 96</strong> · Dashboard de Produtividade — Acabamento</div>
+</div>
+
+<!-- EFIC POPUP — detalhe de modelo -->
+<div class="fbk" id="eficPopBkd" style="display:none;" onclick="fecharEficPop()"></div>
+<div id="eficPop" style="display:none;position:fixed;z-index:300;background:#fff;border-radius:14px;box-shadow:0 16px 64px rgba(89,44,149,.25);border:1.5px solid var(--lav);padding:0;width:min(680px,94vw);max-height:86vh;flex-direction:column;top:50%;left:50%;transform:translate(-50%,-50%);">
+  <button class="fx" onclick="fecharEficPop()" style="top:10px;right:12px;">×</button>
+  <div style="padding:16px 20px 12px;border-bottom:1px solid var(--lav-l);">
+    <div style="font-size:16px;font-weight:800;color:var(--txt);" id="eficPopTitulo">—</div>
+    <div style="font-size:11px;color:var(--txt-s);margin-top:2px;" id="eficPopSub">—</div>
+  </div>
+  <div style="overflow-y:auto;flex:1;padding:14px 20px 18px;" id="eficPopBody"></div>
 </div>
 
 <div class="fbk" id="fbk" onclick="fecharSubPopup();fecharTodos()"></div>
@@ -547,11 +653,23 @@ window.addEventListener('load',function(){
   // Delegação de clique para ficha do colaborador (data-col/data-area)
   document.addEventListener('click', function(e){
     var btn = e.target.closest('.ficha-btn');
-    if(!btn) return;
-    e.stopPropagation();
-    var col = btn.getAttribute('data-col');
-    var area = btn.getAttribute('data-area');
-    if(col && area) abrirFichaColab(col, area);
+    if(btn){ e.stopPropagation(); var col=btn.getAttribute('data-col'),area=btn.getAttribute('data-area'); if(col&&area) abrirFichaColab(col,area); return; }
+
+    // Eficiência — KPI cards
+    var kpi = e.target.closest('[data-efickpi]');
+    if(kpi){ var fn=kpi.getAttribute('data-efickpi'); if(fn==='pend') setEficSubTab('pend'); else eficAbrirKpi(fn); return; }
+
+    // Eficiência — ranking de modelo
+    var modEl = e.target.closest('[data-eficmod]');
+    if(modEl){ var raw=decodeURIComponent(modEl.getAttribute('data-eficmod')); var parts=raw.split('|||'); if(parts.length===3) eficAbrirModPop2(parts[0],parts[1],parts[2]); return; }
+
+    // Eficiência — OS pendente
+    var osEl = e.target.closest('[data-eficos]');
+    if(osEl){ var raw2=decodeURIComponent(osEl.getAttribute('data-eficos')); var parts2=raw2.split('|||'); if(parts2.length===2) eficAbrirOSPop(parts2[0],parts2[1]); return; }
+
+    // Eficiência — sort de tabela de detalhe
+    var sortEl = e.target.closest('[data-eficsort]');
+    if(sortEl){ var rs=sortEl.getAttribute('data-eficsort').split('|||'); var cur=_eficDetalheSort[rs[0]]||{}; eficRenderDetalheTable(rs[0],cur.rows,cur.cenario,rs[1],cur.col===rs[1]?!cur.asc:true); return; }
   });
   var h=new Date(),h30=new Date();
   h30.setDate(h30.getDate()-30);
@@ -672,7 +790,7 @@ var CACHE_TTL=15*60*1000; // 15 minutos em ms
 function processarRegistros(registros){
   return registros.filter(function(r){return r&&r[0];}).map(function(r){
     var dt=new Date(r[0]);
-    if(isNaN(dt.getTime()))dt=new Date();
+    if(isNaN(dt.getTime()))return null; // ignora registro com data inválida
     return{
       data:dt,ds:fd(dt),
       col:(r[1]||'').toString().toUpperCase().trim(),
@@ -686,7 +804,7 @@ function processarRegistros(registros){
       baz:Number(r[10])||0,con:Number(r[11])||0,
           suj:Number(r[12])||0
         };
-  });
+  }).filter(Boolean); // remove os nulls
 }
 
 function salvarCache(registros){
@@ -1854,6 +1972,10 @@ function goTab(id,btn){
   if(id==='perf'){
     iniciarPerfArea();
     renderPerfMainContent();
+  }
+  if(id==='efic'){
+    if(_eficCarregado) renderEfic();
+    // Se não carregado ainda, a tela de boas-vindas com botão já está visível
   }
 }
 
@@ -3214,6 +3336,990 @@ function renderPerfRank(){
   if(typeof iniciarPerfArea==='function') iniciarPerfArea();
 }
 
+// ═══════════════════════════════════════════════════════════════
+// EFICIÊNCIA PRODUTIVA
+// ═══════════════════════════════════════════════════════════════
+var EFIC_SHEET_ID = '1yrJkCYUyIdvdbkhgNnERoyL55bq5cfPcIYNwJqMmdOA'; // referência apenas
+var EFIC_DATA_INICIO = new Date('2026-05-14T00:00:00'); // início novo modelo de revisão
+var _eficDadosReceb   = []; // linhas da planilha Karina parseadas
+var _eficCarregado    = false;
+var _eficSubTab       = 'rev'; // 'rev' | 'lin'
+var _eficCharts       = {};
+
+// Normaliza strings para comparação (remove acentos, maiúsculas, espaços extras)
+function eficNorm(s){
+  if(!s) return '';
+  return s.toString().toUpperCase().trim()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/\s+/g,' ');
+}
+
+// Detecta produto de alta demanda (BRA 001, BRA 002 e outros de giro rápido)
+function eficIsAltaDemanda(modelo, tempoMedio){
+  var m = eficNorm(modelo);
+  if(m.indexOf('BRA 001')>=0 || m.indexOf('BRA001')>=0) return true;
+  if(m.indexOf('BRA 002')>=0 || m.indexOf('BRA002')>=0) return true;
+  // Considera alta demanda qualquer modelo com tempo médio < 5 dias para linha
+  if(tempoMedio !== undefined && tempoMedio < 5) return true;
+  return false;
+}
+
+// Normaliza nome do produto ignorando erros comuns (TOP vs REGATA, acentos)
+function eficNormProduto(s){
+  var n = eficNorm(s);
+  // BRA 001 e BRA 002 sempre classificados juntos independente de "TOP" ou "REGATA"
+  if(n.match(/^BRA\s*00[12]/)) return n.replace(/\s+/g,'').substring(0,6); // BRA001 ou BRA002
+  return n;
+}
+
+function carregarEfic(forcar){
+  if(_eficCarregado && !forcar) { renderEfic(); return; }
+  var loadMsg = document.getElementById('eficLoadMsg');
+  var loadTxt = document.getElementById('eficLoadTxt');
+  if(loadMsg) { loadMsg.style.display='block'; }
+  if(loadTxt) loadTxt.innerHTML = '⏳ Carregando planilha de recebimento...';
+  fetch(SCRIPT_URL+'?action=recebimento&t='+Date.now())
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if(data.ok === false){ throw new Error(data.erro||'Erro no script'); }
+      _eficDadosReceb = eficParseRows(data.recebimentos||[], data.cabecalho||[]);
+      _eficCarregado = true;
+      if(loadMsg) loadMsg.style.display='none';
+      document.getElementById('eficContent').style.display='block';
+      renderEfic();
+      toast('✔ '+_eficDadosReceb.length+' recebimentos desde 14/05 carregados');
+    })
+    .catch(function(e){
+      if(loadTxt) loadTxt.innerHTML = '❌ Erro ao carregar dados de recebimento.<br><small>'+e+'</small>';
+    });
+}
+
+// Parser: recebe arrays do Apps Script (já parseados pelo Google)
+// cabecalho[0..16] = linha 1 da planilha Karina
+// rows = linhas 2+ (cada linha é array com 17 posições: cols A→Q)
+// Regras de negócio — classificação de cada item
+// Retorna: 'excluir' | 'somente_linha' | 'normal'
+function eficClassificar(prod, tipo){
+  var p = eficNorm(prod);
+  var t = eficNorm(tipo);
+  // Brinde → excluir completamente
+  if(p.indexOf('BRINDE') >= 0) return 'excluir';
+  // Calça (pelo tipo ou por modelo conhecido) → excluir
+  if(t === 'CALCA' || t === 'CALÇA') return 'excluir';
+  var modelosCalca = ['TEDDY','DUNA','SELENA','TORONTO','NIKKI','MIRANDA','STELLA','HOLLY','BARBARA','NALU SHORT','DUNA TOP'];
+  for(var i=0;i<modelosCalca.length;i++){
+    // match exato no início do nome normalizado
+    if(p === modelosCalca[i] || p.indexOf(modelosCalca[i]+' ') === 0) return 'excluir';
+  }
+  // Tricot (vem pronto, só passa por linha/embalagem) → excluir da revisão
+  if(t === 'TRICOT') return 'somente_linha';
+  var modelosTricot = ['LUCY','JESSI','NAOMI','STAR','BRASIL','BRA 001','BRA 002','BRA001','BRA002'];
+  for(var j=0;j<modelosTricot.length;j++){
+    if(p === modelosTricot[j] || p.indexOf(modelosTricot[j]+' ') === 0) return 'somente_linha';
+  }
+  return 'normal';
+}
+
+// Mapeamento: A=0,B=1(data),C=2(facção),D=3(OS),E=4(produto),F=5(cor),G=6(tipo),H-Q=7-16(tamanhos)
+function eficParseRows(rows, cabecalho){
+  // Identificar colunas de tamanho pelo cabeçalho (índices 7 a 16)
+  var tamCols = [];
+  for(var i=7; i<=16; i++){
+    var h = cabecalho[i] ? cabecalho[i].toString().trim() : '';
+    if(h) tamCols.push({idx:i, nome:h});
+  }
+  var result = [];
+  rows.forEach(function(cols){
+    var dataVal = cols[1]; // col B
+    if(!dataVal) return;
+    var dt;
+    if(dataVal instanceof Date){
+      dt = dataVal;
+    } else {
+      var ds = dataVal.toString().trim();
+      if(ds.indexOf('T') >= 0) dt = new Date(ds);
+      else dt = eficParseDate(ds);
+    }
+    if(!dt || isNaN(dt.getTime())) return;
+    if(dt < EFIC_DATA_INICIO) return; // ignora registros anteriores ao novo modelo
+    var os   = (cols[3]||'').toString().trim();
+    var prod = (cols[4]||'').toString().trim();
+    var cor  = (cols[5]||'').toString().trim();
+    var tipo = (cols[6]||'').toString().trim();
+    var classe = eficClassificar(prod, tipo);
+    if(classe === 'excluir') return; // calças e brindes fora
+    var totalReceb = 0;
+    var tamDetalhe = {};
+    tamCols.forEach(function(tc){
+      var v = parseFloat((cols[tc.idx]||'').toString().replace(',','.')) || 0;
+      if(v > 0){ tamDetalhe[tc.nome] = v; totalReceb += v; }
+    });
+    if(!os && totalReceb === 0) return;
+    result.push({
+      dt: dt, ds: eficFd(dt),
+      fac: (cols[2]||'').toString().trim(),
+      os: os.toUpperCase(),
+      prod: prod, prodNorm: eficNorm(prod), prodKey: eficNormProduto(prod),
+      cor: cor, corNorm: eficNorm(cor),
+      tipo: tipo,
+      classe: classe, // 'normal' | 'somente_linha'
+      total: totalReceb, tam: tamDetalhe
+    });
+  });
+  return result;
+}
+
+function eficParseDate(s){
+  if(!s) return null;
+  // formatos: DD/MM/YYYY ou YYYY-MM-DD
+  var m1 = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if(m1) return new Date(parseInt(m1[3]), parseInt(m1[2])-1, parseInt(m1[1]));
+  var m2 = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(m2) return new Date(parseInt(m2[1]), parseInt(m2[2])-1, parseInt(m2[3]));
+  return null;
+}
+
+function eficFd(d){ return d.toISOString().split('T')[0]; }
+
+function eficDiffDias(d1, d2){
+  // d1 = mais antiga, d2 = mais recente; retorna dias
+  return Math.round((d2.getTime()-d1.getTime())/(1000*60*60*24));
+}
+
+// Monta índice → {dtReceb, total, prod, cor, prodKey} — chave composta OS+prodKey para evitar colisão
+function eficIndexReceb(filtroMod){
+  var idx = {};
+  _eficDadosReceb.forEach(function(row){
+    if(filtroMod && eficNorm(row.prod).indexOf(filtroMod)<0 && eficNorm(row.os).indexOf(filtroMod)<0) return;
+    // Chave composta: OS numérica + produto normalizado (evita BRA001 OS 1520 colidir com outro produto na mesma OS)
+    var osNum = row.os.replace(/[^0-9]/g,'');
+    var key = osNum ? (osNum + '|' + row.prodKey) : ('SEM-OS-'+row.ds+'-'+row.prodNorm);
+    if(!idx[key] || row.dt < idx[key].dt){ idx[key] = Object.assign({}, row, {_key: key}); }
+  });
+  return idx;
+}
+
+// Monta índice OS → {dtPrimRev, dtPrimLin} — também usa chave OS+mod para cruzamento correto
+function eficIndexAcab(base, filtroMod){
+  var idxRev={}, idxLin={};
+  base.forEach(function(r){
+    var os = r.os;
+    if(!os) return;
+    if(r.data < EFIC_DATA_INICIO) return; // só registros do novo modelo
+    if(filtroMod && eficNorm(r.mod).indexOf(filtroMod)<0 && eficNorm(os).indexOf(filtroMod)<0) return;
+    var osNum = os.replace(/[^0-9]/g,'');
+    // modKey: só o nome do modelo SEM o tipo (ex: "PÉROLA — Vestido" → "PEROLA")
+    // para bater com a chave do recebimento que só tem o produto (col E da planilha Karina)
+    var modRaw = r.mod || '';
+    var modSemTipo = modRaw.split('—')[0].split(' - ')[0].trim();
+    var modKey = eficNormProduto(modSemTipo);
+    var keyFull = osNum ? (osNum + '|' + modKey) : null;
+    var keyOs   = os; // chave simples como fallback
+    if(r.tipo === 'Revisão'){
+      if(keyFull && (!idxRev[keyFull] || r.data < idxRev[keyFull].dt)) idxRev[keyFull]={dt:r.data, mod:r.mod, cor:r.cor};
+      if(!idxRev[keyOs] || r.data < idxRev[keyOs].dt) idxRev[keyOs]={dt:r.data, mod:r.mod, cor:r.cor};
+    }
+    if(r.tipo === 'Linha / Embalagem'){
+      if(keyFull && (!idxLin[keyFull] || r.data < idxLin[keyFull].dt)) idxLin[keyFull]={dt:r.data, mod:r.mod, cor:r.cor};
+      if(!idxLin[keyOs] || r.data < idxLin[keyOs].dt) idxLin[keyOs]={dt:r.data, mod:r.mod, cor:r.cor};
+    }
+  });
+  return {rev:idxRev, lin:idxLin};
+}
+
+function setEficSubTab(tab){
+  _eficSubTab = tab;
+  var tabs = {rev:'eficTab1', lin:'eficTab2', pend:'eficTab3'};
+  var divs = {rev:'eficSubRev', lin:'eficSubLin', pend:'eficSubPend'};
+  Object.keys(tabs).forEach(function(k){
+    var btn = document.getElementById(tabs[k]);
+    var div = document.getElementById(divs[k]);
+    if(btn){ btn.style.background = k===tab?'var(--roxo)':'#fff'; btn.style.color = k===tab?'#fff':'var(--txt-s)'; }
+    if(div) div.style.display = k===tab?'':'none';
+  });
+}
+
+function renderEficFiltrado(){
+  renderEfic();
+}
+
+function renderEfic(){
+  if(!_eficCarregado) return;
+  var filtroRaw = (document.getElementById('eficFiltroMod')||{}).value||'';
+  var filtro = eficNorm(filtroRaw);
+
+  var recebIdx = eficIndexReceb(filtro);
+  var acabIdx  = eficIndexAcab(window._base && window._base.length ? window._base : todos, filtro);
+
+  // Índice de total lançado por OS no acabamento (para calcular cobertura 99.5%)
+  // Soma tot (total lançado) de todos os registros de linha/embalagem por OS
+  var coberturaIdx = {}; // key → totalLançado
+  var baseAcab = window._base && window._base.length ? window._base : todos;
+  baseAcab.forEach(function(r){
+    if(!r.os || r.data < EFIC_DATA_INICIO) return;
+    if(r.tipo !== 'Linha / Embalagem') return;
+    var osNum = r.os.replace(/[^0-9]/g,'');
+    var modSemTipo = (r.mod||'').split('—')[0].split(' - ')[0].trim();
+    var modKey = eficNormProduto(modSemTipo);
+    var keyFull = osNum ? (osNum+'|'+modKey) : null;
+    if(keyFull){
+      coberturaIdx[keyFull] = (coberturaIdx[keyFull]||0) + (r.tot||0);
+    }
+    coberturaIdx[r.os] = (coberturaIdx[r.os]||0) + (r.tot||0);
+  });
+
+  // Cruzamento: para cada OS recebida, buscar quando foi revisada e quando foi para linha
+  var cruzamentos = [];
+  Object.keys(recebIdx).forEach(function(key){
+    var rec = recebIdx[key];
+    // Tenta chave composta primeiro, depois chave simples de OS
+    var rev = acabIdx.rev[key] || acabIdx.rev[rec.os];
+    var lin = acabIdx.lin[key] || acabIdx.lin[rec.os];
+    var somenteLinha = rec.classe === 'somente_linha';
+
+    // Cobertura: quanto do recebido já foi lançado na linha/embalagem
+    var totalLancado = (coberturaIdx[key]||0) || (coberturaIdx[rec.os]||0);
+    var cobertura = rec.total > 0 ? totalLancado / rec.total : 0;
+    // OS finalizada se: tem lançamento de linha OU cobertura ≥ 99.5% (tolerância de perda)
+    var finalizado = !!lin || cobertura >= 0.995;
+
+    cruzamentos.push({
+      os: rec.os,
+      dtReceb: rec.dt, dsReceb: rec.ds,
+      prod: rec.prod, prodKey: rec.prodKey, cor: rec.cor, total: rec.total,
+      tam: rec.tam,
+      classe: rec.classe,
+      somenteLinha: somenteLinha,
+      dtRev: rev ? rev.dt : null, dsRev: rev ? eficFd(rev.dt) : null,
+      dtLin: lin ? lin.dt : null, dsLin: lin ? eficFd(lin.dt) : null,
+      diasRev: (!somenteLinha && rev) ? eficDiffDias(rec.dt, rev.dt) : null,
+      diasLin: lin ? eficDiffDias(rec.dt, lin.dt) : null,
+      diasRevLin: (rev && lin) ? eficDiffDias(rev.dt, lin.dt) : null,
+      revisado: !somenteLinha && !!rev,
+      finalizado: finalizado,
+      cobertura: cobertura,
+      totalLancado: totalLancado
+    });
+  });
+
+  // Separar normal vs tricot para KPIs distintos
+  var cruzNormal = cruzamentos.filter(function(c){return !c.somenteLinha;});
+  var cruzTricot = cruzamentos.filter(function(c){return c.somenteLinha;});
+
+  // KPIs gerais
+  var totReceb = cruzamentos.reduce(function(s,c){return s+c.total;},0);
+  var comRev  = cruzNormal.filter(function(c){return c.revisado;});
+  var comLin  = cruzamentos.filter(function(c){return c.finalizado;});
+  var semRev  = cruzNormal.filter(function(c){return !c.revisado;});
+  var diasRevArr = comRev.filter(function(c){return c.diasRev>=0&&c.diasRev<365;}).map(function(c){return c.diasRev;});
+  var diasLinArr = comLin.filter(function(c){return c.diasLin>=0&&c.diasLin<365;}).map(function(c){return c.diasLin;});
+  var mediaRev = diasRevArr.length ? (diasRevArr.reduce(function(s,v){return s+v;},0)/diasRevArr.length).toFixed(1) : '—';
+  var mediaLin = diasLinArr.length ? (diasLinArr.reduce(function(s,v){return s+v;},0)/diasLinArr.length).toFixed(1) : '—';
+  var pctRev = cruzNormal.length ? ((comRev.length/cruzNormal.length)*100).toFixed(0) : 0;
+  var pctLin = cruzamentos.length ? ((comLin.length/cruzamentos.length)*100).toFixed(0) : 0;
+
+  var kpiHtml =
+    eficKpi('📥 OS Recebidas', cruzamentos.length+' OS', n(totReceb)+' peças · tricot: '+cruzTricot.length, '#592C95', null) +
+    eficKpi('🔍 Revisadas', comRev.length+' OS ('+pctRev+'%)', 'Tempo médio: '+mediaRev+' dias · só malha', '#AE76E5', 'rev_ok') +
+    eficKpi('📦 Finalizadas Linha', comLin.length+' OS ('+pctLin+'%)', 'Tempo médio: '+mediaLin+' dias', '#1D9E75', 'lin_ok') +
+    eficKpi('⏳ Pendentes Revisão', semRev.length+' OS', semRev.reduce(function(s,c){return s+c.total;},0)+' peças · malha', '#E24B4A', 'pend');
+  document.getElementById('eficKpis').innerHTML = kpiHtml;
+
+  var info = document.getElementById('eficFiltroInfo');
+  if(info) info.textContent = filtro ? cruzamentos.length+' OS encontradas' : '';
+
+  // Guardar cruzamentos globalmente para popups
+  window._eficCruz = cruzamentos;
+  window._eficComRev = comRev;
+  window._eficComLin = comLin;
+  window._eficSemRev = semRev;
+  window._eficSemLin = cruzamentos.filter(function(c){return !c.finalizado;});
+
+  // -- CENÁRIO REVISÃO -- (só malha normal, tricot excluído)
+  renderEficCenarioRev(cruzNormal, comRev, semRev, diasRevArr, mediaRev);
+  // -- CENÁRIO LINHA -- (todos: malha + tricot)
+  renderEficCenarioLin(cruzamentos, comLin, diasLinArr, mediaLin, cruzTricot);
+  // -- OS PENDENTES --
+  renderEficPendentes(semRev, window._eficSemLin);
+  // -- INSIGHTS --
+  renderEficInsights(cruzamentos, comRev, comLin, semRev, mediaRev, mediaLin);
+}
+
+function eficKpi(lbl, val, sub, cor, onclickFn){
+  var cursor = onclickFn ? 'cursor:pointer;' : '';
+  var click = onclickFn ? ' data-efickpi="'+onclickFn+'"' : '';
+  var hint = onclickFn ? '<div style="font-size:9px;color:'+cor+';opacity:.7;margin-top:3px;">clique para detalhar →</div>' : '';
+  return '<div style="background:#fff;border-radius:12px;border:1px solid var(--brd);padding:14px 16px;box-shadow:0 2px 8px rgba(89,44,149,.06);'+cursor+'"'+click+'>'+
+    '<div style="font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;margin-bottom:6px;color:'+cor+'">'+lbl+'</div>'+
+    '<div style="font-size:22px;font-weight:800;line-height:1;margin-bottom:4px;color:'+cor+'">'+val+'</div>'+
+    '<div style="font-size:11px;color:var(--txt-s);">'+sub+'</div>'+hint+
+    '</div>';
+}
+
+function renderEficCenarioRev(cruz, comRev, semRev, diasRevArr, mediaRev){
+  // Gráfico: tempo médio por semana de recebimento
+  var semanas={};
+  comRev.forEach(function(c){
+    if(c.diasRev<0||c.diasRev>365) return;
+    var sem = eficGetSemana(c.dtReceb);
+    if(!semanas[sem]) semanas[sem]={dias:[],sem:sem};
+    semanas[sem].dias.push(c.diasRev);
+  });
+  var semKeys = Object.keys(semanas).sort();
+  var labels = semKeys.map(function(s){ return 'Sem '+s.split('-W')[1]+'/'+s.split('-W')[0].slice(2); });
+  var vals   = semKeys.map(function(s){ return parseFloat((semanas[s].dias.reduce(function(a,b){return a+b;},0)/semanas[s].dias.length).toFixed(1)); });
+  eficRenderChart('cEficRev', labels, vals, 'Dias médios recebimento→revisão', '#AE76E5');
+  if(document.getElementById('eficRevInfo')) document.getElementById('eficRevInfo').textContent = 'média geral: '+mediaRev+' dias · '+comRev.length+' OS';
+
+  // Top modelos por tempo médio — clicável
+  var porMod={};
+  comRev.forEach(function(c){
+    if(c.diasRev<0||c.diasRev>365) return;
+    var k = eficNorm(c.prod);
+    if(!porMod[k]) porMod[k]={prod:c.prod,dias:[],total:0};
+    porMod[k].dias.push(c.diasRev); porMod[k].total+=c.total;
+  });
+  var modArr = Object.values(porMod).map(function(m){
+    return {prod:m.prod, media:parseFloat((m.dias.reduce(function(a,b){return a+b;},0)/m.dias.length).toFixed(1)), count:m.dias.length, total:m.total};
+  }).sort(function(a,b){return b.media-a.media;});
+  var maxDias = modArr.length ? modArr[0].media : 1;
+  var mHtml='<div style="font-size:10px;font-weight:700;color:var(--txt-s);display:grid;grid-template-columns:1fr 60px 60px;padding:4px 0;border-bottom:1px solid var(--lav-l);text-transform:uppercase;letter-spacing:.05em;"><span>Modelo</span><span style="text-align:right">Dias</span><span style="text-align:right">OS</span></div>';
+  modArr.slice(0,15).forEach(function(m){
+    var pct2 = Math.round((m.media/maxDias)*100);
+    var cor = m.media<=3?'var(--ok)':m.media<=7?'var(--warn)':'var(--bad)';
+    mHtml+='<div data-eficmod="'+encodeURIComponent(m.prod)+'|||'+encodeURIComponent('')+'|||diasRev" style="display:grid;grid-template-columns:1fr 60px 60px;align-items:center;padding:5px 0;border-bottom:1px solid var(--lav-l);font-size:11px;cursor:pointer;">'+
+      '<div><div style="font-weight:600;color:var(--txt);">'+m.prod+'</div>'+
+      '<div style="height:4px;background:var(--lav-l);border-radius:2px;margin-top:3px;"><div style="height:4px;border-radius:2px;background:'+cor+';width:'+pct2+'%"></div></div></div>'+
+      '<div style="text-align:right;font-weight:800;color:'+cor+'">'+m.media+'d</div>'+
+      '<div style="text-align:right;color:var(--txt-s);">'+m.count+'</div></div>';
+  });
+  document.getElementById('eficRevModelos').innerHTML = mHtml;
+
+  // Ranking de velocidade — Revisão
+  eficRenderRanking(comRev, 'diasRev', 'eficRevRanking', '#AE76E5');
+
+  // Detalhe por modelo·cor com sort — padrão: menor tempo primeiro
+  var detalheMap={};
+  comRev.forEach(function(c){
+    if(c.diasRev<0||c.diasRev>365) return;
+    var k=eficNorm(c.prod)+'|'+eficNorm(c.cor);
+    if(!detalheMap[k]) detalheMap[k]={prod:c.prod,cor:c.cor,dias:[],total:0,tamTotal:{},isSomLin:false};
+    detalheMap[k].dias.push(c.diasRev); detalheMap[k].total+=c.total;
+    if(c.tam) Object.keys(c.tam).forEach(function(t){ detalheMap[k].tamTotal[t]=(detalheMap[k].tamTotal[t]||0)+c.tam[t]; });
+  });
+  var detArr=Object.values(detalheMap).map(function(d){
+    return {prod:d.prod,cor:d.cor,media:parseFloat((d.dias.reduce(function(a,b){return a+b;},0)/d.dias.length).toFixed(1)),min:Math.min.apply(null,d.dias),max:Math.max.apply(null,d.dias),count:d.dias.length,total:d.total,tamTotal:d.tamTotal,isSomLin:false};
+  }).sort(function(a,b){return a.media-b.media;}); // menor primeiro por padrão
+  eficRenderDetalheTable('eficRevDetalhe', detArr, 'diasRev', 'media');
+}
+
+function renderEficCenarioLin(cruz, comLin, diasLinArr, mediaLin, cruzTricot){
+  cruzTricot = cruzTricot || [];
+  // Gráfico: tempo médio por semana
+  var semanas={};
+  comLin.forEach(function(c){
+    if(c.diasLin<0||c.diasLin>365) return;
+    var sem=eficGetSemana(c.dtReceb);
+    if(!semanas[sem]) semanas[sem]={dias:[]};
+    semanas[sem].dias.push(c.diasLin);
+  });
+  var semKeys=Object.keys(semanas).sort();
+  var labels=semKeys.map(function(s){return 'Sem '+s.split('-W')[1]+'/'+s.split('-W')[0].slice(2);});
+  var vals=semKeys.map(function(s){return parseFloat((semanas[s].dias.reduce(function(a,b){return a+b;},0)/semanas[s].dias.length).toFixed(1));});
+  eficRenderChart('cEficLin',labels,vals,'Dias médios recebimento→linha','#1D9E75');
+  if(document.getElementById('eficLinInfo')) document.getElementById('eficLinInfo').textContent='média geral: '+mediaLin+' dias · '+comLin.length+' OS';
+  // Top modelos
+  var porMod={};
+  comLin.forEach(function(c){
+    if(c.diasLin<0||c.diasLin>365) return;
+    var k=eficNorm(c.prod);
+    if(!porMod[k]) porMod[k]={prod:c.prod,dias:[],total:0};
+    porMod[k].dias.push(c.diasLin); porMod[k].total+=c.total;
+  });
+  var modArr=Object.values(porMod).map(function(m){
+    return {prod:m.prod,media:parseFloat((m.dias.reduce(function(a,b){return a+b;},0)/m.dias.length).toFixed(1)),count:m.dias.length,total:m.total};
+  }).sort(function(a,b){return b.media-a.media;});
+  var maxDias=modArr.length?modArr[0].media:1;
+  var mHtml='<div style="font-size:10px;font-weight:700;color:var(--txt-s);display:grid;grid-template-columns:1fr 60px 60px;padding:4px 0;border-bottom:1px solid var(--lav-l);text-transform:uppercase;letter-spacing:.05em;"><span>Modelo</span><span style="text-align:right">Dias</span><span style="text-align:right">OS</span></div>';
+  modArr.slice(0,15).forEach(function(m){
+    var pct2=Math.round((m.media/maxDias)*100);
+    var cor=m.media<=5?'var(--ok)':m.media<=14?'var(--warn)':'var(--bad)';
+    var badge=eficIsAltaDemanda(m.prod,m.media)?'<span style="font-size:9px;background:#dcfce7;color:#166534;border-radius:4px;padding:1px 5px;margin-left:4px;font-weight:700;">⚡ ALTA DEMANDA</span>':'';
+    mHtml+='<div data-eficmod="'+encodeURIComponent(m.prod)+'|||'+encodeURIComponent('')+'|||diasLin" style="display:grid;grid-template-columns:1fr 60px 60px;align-items:center;padding:5px 0;border-bottom:1px solid var(--lav-l);font-size:11px;cursor:pointer;">'+
+      '<div><div style="font-weight:600;color:var(--txt);">'+m.prod+badge+'</div>'+
+      '<div style="height:4px;background:var(--lav-l);border-radius:2px;margin-top:3px;"><div style="height:4px;border-radius:2px;background:'+cor+';width:'+pct2+'%"></div></div></div>'+
+      '<div style="text-align:right;font-weight:800;color:'+cor+'">'+m.media+'d</div>'+
+      '<div style="text-align:right;color:var(--txt-s);">'+m.count+'</div></div>';
+  });
+  document.getElementById('eficLinModelos').innerHTML=mHtml;
+
+  // ── Alta demanda — cards enriquecidos com análise de variância e outlier de volume
+  // Recalcula por modelo com dados detalhados de lotes
+  var adMap={};
+  comLin.forEach(function(c){
+    if(c.diasLin<0||c.diasLin>365) return;
+    var k=eficNorm(c.prod);
+    if(!adMap[k]) adMap[k]={prod:c.prod,dias:[],totais:[],osCount:0,totalPecas:0};
+    adMap[k].dias.push(c.diasLin);
+    adMap[k].totais.push(c.total);
+    adMap[k].osCount++;
+    adMap[k].totalPecas+=c.total;
+  });
+
+  var altaMod=modArr.filter(function(m){return eficIsAltaDemanda(m.prod,m.media);});
+  var adHtml='';
+  if(altaMod.length===0){
+    adHtml='<div style="color:var(--txt-s);font-size:12px;padding:8px 0;">Nenhum modelo de alta demanda identificado no período.</div>';
+  } else {
+    adHtml='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;">';
+    altaMod.forEach(function(m){
+      var d = adMap[eficNorm(m.prod)];
+      if(!d){ d={dias:[m.media],totais:[0],osCount:m.count,totalPecas:m.total}; }
+
+      // Estatísticas
+      var mediaD = m.media;
+      var minD = Math.min.apply(null,d.dias);
+      var maxD = Math.max.apply(null,d.dias);
+      var desvio = d.dias.length>1 ? parseFloat(Math.sqrt(d.dias.reduce(function(s,v){return s+Math.pow(v-mediaD,2);},0)/d.dias.length).toFixed(1)) : 0;
+      var mediaTot = d.totalPecas/Math.max(d.osCount,1);
+      var maxLote = Math.max.apply(null,d.totais);
+      var pctMaxLote = d.totalPecas>0 ? Math.round((maxLote/d.totalPecas)*100) : 0;
+
+      // Detecta outlier de volume: um único lote representa >40% do total
+      var temLoteAnormal = pctMaxLote>=40 && d.osCount>1;
+      // Detecta alta variância: desvio > 2 dias
+      var altaVariancia = desvio>2;
+
+      // Insight contextual automático
+      var insight='';
+      if(temLoteAnormal && altaVariancia){
+        insight='⚠️ Lote anormal: 1 OS com '+pctMaxLote+'% do volume total distorceu a média. Variância alta (±'+desvio+'d) — desconsidere a média isoladamente.';
+      } else if(temLoteAnormal){
+        insight='📦 Volume concentrado: um único lote representa '+pctMaxLote+'% das peças. A média pode não refletir o ritmo real de processamento.';
+      } else if(altaVariancia){
+        insight='📊 Alta variância (±'+desvio+'d): tempo de processamento irregular. Verifique se há priorização inconsistente entre lotes.';
+      } else if(mediaD<=2){
+        insight='✅ Processamento muito ágil. Reflete prioridade de venda alta e boa absorção pelo acabamento.';
+      } else {
+        insight='✅ Volume e tempo dentro do esperado para o período.';
+      }
+
+      var cor=temLoteAnormal?'#fef9c3':(mediaD<=5?'#dcfce7':mediaD<=10?'#fef3c7':'#fee2e2');
+      var corT=temLoteAnormal?'#854d0e':(mediaD<=5?'#166534':mediaD<=10?'#854d0e':'#991b1b');
+      var alerta=temLoteAnormal?'<span style="font-size:9px;background:#fde68a;color:#92400e;border-radius:4px;padding:1px 5px;margin-left:4px;font-weight:700;">⚠️ LOTE ANORMAL</span>':'';
+
+      adHtml+='<div data-eficad="'+encodeURIComponent(m.prod)+'|||'+encodeURIComponent(insight)+'" style="background:'+cor+';border-radius:10px;padding:12px 14px;cursor:default;position:relative;" '+
+        'onmouseenter="eficShowTooltip(this,event)" onmouseleave="eficHideTooltip()">'+
+        '<div style="font-size:11px;font-weight:800;color:'+corT+'">⚡ '+m.prod+alerta+'</div>'+
+        '<div style="font-size:22px;font-weight:800;color:'+corT+';margin:4px 0;">'+mediaD+'d</div>'+
+        '<div style="font-size:10px;color:'+corT+';">'+m.count+' OS · '+n(m.total)+' pç</div>'+
+        '<div style="font-size:10px;color:'+corT+';margin-top:4px;opacity:.8;">min:'+minD+'d · max:'+maxD+'d · ±'+desvio+'d</div>'+
+        '</div>';
+    });
+    adHtml+='</div>';
+  }
+  document.getElementById('eficAltaDemanda').innerHTML=adHtml;
+  // Ranking de velocidade — Linha
+  eficRenderRanking(comLin, 'diasLin', 'eficLinRanking', '#1D9E75');
+  // Detalhe por modelo·cor com breakdown de tamanho — padrão: menor tempo primeiro
+  var detalheMap={};
+  comLin.forEach(function(c){
+    if(c.diasLin<0||c.diasLin>365) return;
+    var k=eficNorm(c.prod)+'|'+eficNorm(c.cor);
+    if(!detalheMap[k]) detalheMap[k]={prod:c.prod,cor:c.cor,dias:[],total:0,diasRevLin:[],tamTotal:{},isSomLin:c.somenteLinha||false};
+    detalheMap[k].dias.push(c.diasLin);
+    detalheMap[k].total+=c.total;
+    if(c.diasRevLin!==null&&c.diasRevLin>=0) detalheMap[k].diasRevLin.push(c.diasRevLin);
+    if(c.tam) Object.keys(c.tam).forEach(function(t){ detalheMap[k].tamTotal[t]=(detalheMap[k].tamTotal[t]||0)+c.tam[t]; });
+  });
+  var detArr=Object.values(detalheMap).map(function(d){
+    var mediaRL=d.diasRevLin.length?parseFloat((d.diasRevLin.reduce(function(a,b){return a+b;},0)/d.diasRevLin.length).toFixed(1)):null;
+    return {prod:d.prod,cor:d.cor,media:parseFloat((d.dias.reduce(function(a,b){return a+b;},0)/d.dias.length).toFixed(1)),min:Math.min.apply(null,d.dias),max:Math.max.apply(null,d.dias),count:d.dias.length,total:d.total,mediaRL:mediaRL,tamTotal:d.tamTotal,isSomLin:d.isSomLin};
+  }).sort(function(a,b){return a.media-b.media;}); // menor primeiro por padrão
+  eficRenderDetalheTable('eficLinDetalhe', detArr, 'diasLin', 'media');
+}
+
+function renderEficInsights(cruz, comRev, comLin, semRev, mediaRev, mediaLin){
+  var insights=[];
+  var mr=parseFloat(mediaRev), ml=parseFloat(mediaLin);
+  if(!isNaN(mr)){
+    if(mr<=3) insights.push('✅ <strong>Tempo de revisão excelente</strong> — média de '+mr+' dias. O acabamento está absorvendo rapidamente o recebimento.');
+    else if(mr<=7) insights.push('👍 <strong>Tempo de revisão adequado</strong> — média de '+mr+' dias. Margem para melhoria existe, mas sem urgência.');
+    else insights.push('⚠️ <strong>Tempo de revisão elevado</strong> — média de '+mr+' dias. Investigar se há gargalo na capacidade de revisão ou acúmulo de peças aguardando.');
+  }
+  if(!isNaN(ml)){
+    if(ml<=7) insights.push('✅ <strong>Fluxo de finalização rápido</strong> — média de '+ml+' dias do recebimento até linha/embalagem. Operação eficiente.');
+    else if(ml<=14) insights.push('📦 <strong>Finalização em prazo razoável</strong> — '+ml+' dias em média. Modelos de alta demanda podem puxar a média para baixo; analise os demais individualmente.');
+    else insights.push('🔴 <strong>Finalização demorada</strong> — média de '+ml+' dias. Verifique estoque interno: peças podem estar sendo revisadas mas aguardando demanda por muito tempo.');
+  }
+  if(semRev.length>0){
+    var diasMax=semRev.reduce(function(mx,c){return Math.max(mx,eficDiffDias(c.dtReceb,new Date()));},0);
+    if(diasMax>14) insights.push('🔴 <strong>'+semRev.length+' OS sem revisão</strong>, sendo a mais antiga com '+diasMax+' dias de espera. Verificar prioridade de entrada no setor.');
+    else insights.push('🟡 <strong>'+semRev.length+' OS ainda não revisadas</strong> — máximo de '+diasMax+' dias de espera. Monitorar.');
+  }
+  if(!isNaN(mr)&&!isNaN(ml)){
+    var est=ml-mr;
+    if(est>0) insights.push('📊 O acabamento mantém as peças em <strong>estoque interno por ~'+est.toFixed(1)+' dias</strong> em média após a revisão, antes de encaminhar para linha/embalagem. Isso é esperado para peças aguardando demanda de venda.');
+  }
+  // BRA 001 / BRA 002
+  var bra=comLin.filter(function(c){return eficIsAltaDemanda(c.prod,undefined);});
+  if(bra.length>0){
+    var braMedia=bra.length?(bra.filter(function(c){return c.diasLin>=0&&c.diasLin<365;}).reduce(function(s,c){return s+c.diasLin;},0)/bra.length).toFixed(1):'—';
+    insights.push('⚡ <strong>BRA 001/002 — alta demanda confirmada</strong>: '+bra.length+' OS finalizadas com média de '+braMedia+' dias, refletindo o giro acelerado de vendas desses modelos.');
+  }
+  if(insights.length===0) insights.push('ℹ️ Dados insuficientes para gerar insights. Carregue mais dados ou ajuste o período de análise.');
+  document.getElementById('eficInsights').innerHTML='<ul style="padding-left:18px;">'+insights.map(function(i){return '<li style="margin-bottom:8px;">'+i+'</li>';}).join('')+'</ul>';
+}
+
+function eficGetSemana(d){
+  // Retorna "YYYY-Www"
+  var dt=new Date(d); dt.setHours(0,0,0,0);
+  dt.setDate(dt.getDate()+3-(dt.getDay()+6)%7);
+  var week1=new Date(dt.getFullYear(),0,4);
+  var wn=1+Math.round(((dt-week1)/86400000-(3-(week1.getDay()+6)%7))/7);
+  return dt.getFullYear()+'-W'+(wn<10?'0':'')+wn;
+}
+
+function eficFmtDate(ds){
+  if(!ds) return '—';
+  var p=ds.split('-'); return p[2]+'/'+p[1];
+}
+
+function eficRenderChart(canvasId, labels, values, label, cor){
+  if(_eficCharts[canvasId]) { try{_eficCharts[canvasId].destroy();}catch(e){} _eficCharts[canvasId]=null; }
+  var cv = document.getElementById(canvasId);
+  if(!cv) return;
+  // Ensure canvas is visible (may have been hidden by msg div)
+  cv.style.display = '';
+  var msgId = canvasId+'_msg';
+  var msgEl = document.getElementById(msgId);
+  if(!labels.length){
+    cv.style.display='none';
+    if(!msgEl){ msgEl=document.createElement('div'); msgEl.id=msgId; msgEl.style.cssText='display:flex;align-items:center;justify-content:center;height:100%;color:var(--txt-s);font-size:12px;'; cv.parentElement.appendChild(msgEl); }
+    msgEl.style.display='flex';
+    msgEl.textContent='Sem dados suficientes para o gráfico';
+    return;
+  }
+  if(msgEl) msgEl.style.display='none';
+  _eficCharts[canvasId] = new Chart(cv.getContext('2d'),{
+    type:'bar',
+    data:{labels:labels,datasets:[{label:label,data:values,backgroundColor:cor+'99',borderColor:cor,borderWidth:2,borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return c.parsed.y+' dias';}}}},scales:{y:{beginAtZero:true,ticks:{font:{size:10}},title:{display:true,text:'dias',font:{size:10}}},x:{ticks:{font:{size:10},maxRotation:45}}}}
+  });
+}
+
+
+// ── Ranking de velocidade (revisão e linha)
+function eficRenderRanking(comArr, diasField, elId, cor){
+  var byMod={};
+  comArr.forEach(function(c){
+    var d = c[diasField];
+    if(d===null||d<0||d>365) return;
+    var k = eficNorm(c.prod)+'|'+eficNorm(c.cor);
+    if(!byMod[k]) byMod[k]={prod:c.prod,cor:c.cor,dias:[],tam:{}};
+    byMod[k].dias.push(d);
+    if(c.tam) Object.keys(c.tam).forEach(function(t){ byMod[k].tam[t]=(byMod[k].tam[t]||0)+c.tam[t]; });
+  });
+  var arr=Object.values(byMod).map(function(m){
+    return {prod:m.prod,cor:m.cor,media:parseFloat((m.dias.reduce(function(a,b){return a+b;},0)/m.dias.length).toFixed(1)),count:m.dias.length,tam:m.tam};
+  }).sort(function(a,b){return a.media-b.media;}); // crescente = mais rápido primeiro
+  var html='<div style="font-size:10px;font-weight:700;color:var(--txt-s);display:grid;grid-template-columns:24px 1fr 55px 45px;padding:4px 0;border-bottom:1px solid var(--lav-l);text-transform:uppercase;letter-spacing:.05em;"><span>#</span><span>Modelo · Cor</span><span style="text-align:right">Média</span><span style="text-align:right">OS</span></div>';
+  arr.slice(0,20).forEach(function(d,i){
+    var corD=d.media<=2?'var(--ok)':d.media<=5?'var(--warn)':'var(--bad)';
+    var medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':'';
+    html+='<div data-eficmod="'+encodeURIComponent(d.prod)+'|||'+encodeURIComponent(d.cor)+'|||'+diasField+'" style="display:grid;grid-template-columns:24px 1fr 55px 45px;align-items:center;padding:6px 0;border-bottom:1px solid var(--lav-l);font-size:11px;cursor:pointer;">'+
+      '<span style="font-size:13px;">'+(medal||(i+1)+'.')+'</span>'+
+      '<div><span style="font-weight:700;">'+d.prod+'</span><span style="color:var(--txt-s);"> · '+d.cor+'</span></div>'+
+      '<div style="text-align:right;font-weight:800;color:'+corD+'">'+d.media+'d</div>'+
+      '<div style="text-align:right;color:var(--txt-s);">'+d.count+'</div></div>';
+  });
+  var el=document.getElementById(elId);
+  if(el) el.innerHTML=html;
+}
+
+// ── OS Pendentes tab
+function renderEficPendentes(semRev, semLin){
+  function buildPendList(lista, diasField, elId, infoId, label){
+    var ord=lista.slice().sort(function(a,b){return b.dtReceb-a.dtReceb;});
+    var info=document.getElementById(infoId);
+    if(info) info.textContent = lista.length+' OS · '+n(lista.reduce(function(s,c){return s+c.total;},0))+' peças';
+    if(!lista.length){
+      document.getElementById(elId).innerHTML='<div style="color:var(--ok);font-weight:700;padding:12px 0;font-size:13px;">✅ Nenhuma OS pendente!</div>';
+      return;
+    }
+    var html='<div style="font-size:10px;font-weight:700;color:var(--txt-s);display:grid;grid-template-columns:1fr 75px 60px 55px;padding:4px 0;border-bottom:2px solid var(--lav);text-transform:uppercase;letter-spacing:.05em;"><span>Produto · OS</span><span style="text-align:right">Recebido</span><span style="text-align:right">Dias</span><span style="text-align:right">Peças</span></div>';
+    ord.forEach(function(c){
+      var diasAg=eficDiffDias(c.dtReceb,new Date());
+      var corD=diasAg<=2?'var(--ok)':diasAg<=5?'var(--warn)':'var(--bad)';
+      var st=diasAg<=2?'🟢':diasAg<=5?'🟡':'🔴';
+      var tams=c.tam?Object.keys(c.tam).map(function(t){return t+':'+c.tam[t];}).join(' '):'';
+      html+='<div data-eficos="'+encodeURIComponent(c.os)+'|||'+encodeURIComponent(label)+'" style="padding:5px 0;border-bottom:1px solid var(--lav-l);cursor:pointer;">'+
+        '<div style="display:grid;grid-template-columns:1fr 75px 60px 55px;align-items:center;font-size:11px;">'+
+        '<div><span style="font-weight:700;color:var(--txt);">'+c.prod+(c.cor?' · '+c.cor:'')+'</span>'+
+        '<span style="display:block;font-size:9px;color:var(--txt-s);">OS '+c.os+'</span></div>'+
+        '<div style="text-align:right;font-size:10px;color:var(--txt-s);">'+eficFmtDate(c.dsReceb)+'</div>'+
+        '<div style="text-align:right;font-weight:800;color:'+corD+'">'+st+' '+diasAg+'d</div>'+
+        '<div style="text-align:right;font-weight:600;">'+n(c.total)+'</div></div>'+
+        (tams?'<div style="font-size:9px;color:var(--txt-s);padding-left:2px;">'+tams+'</div>':'')+
+        '</div>';
+    });
+    document.getElementById(elId).innerHTML=html;
+  }
+  buildPendList(semRev,'diasRev','eficPendRev','eficPendRevInfo','Revisão');
+  buildPendList(semLin,'diasLin','eficPendLin','eficPendLinInfo','Linha/Emb.');
+}
+
+// ── Popup detalhe de modelo (chamado pelo event delegation com prod/cor/diasField separados)
+function eficAbrirModPop2(prod, cor, diasField){
+  var cruz=window._eficCruz||[];
+  var arr=cruz.filter(function(c){
+    var prodMatch = eficNorm(c.prod)===eficNorm(prod);
+    var corMatch = !cor || cor==='' || eficNorm(c.cor)===eficNorm(cor);
+    return prodMatch && corMatch && c[diasField]!==null && c[diasField]>=0;
+  }).sort(function(a,b){return a[diasField]-b[diasField];});
+  var tipo=diasField==='diasRev'?'Revisão':'Linha/Embalagem';
+  document.getElementById('eficPopTitulo').textContent=prod+(cor?' · '+cor:' (todas as cores)');
+  document.getElementById('eficPopSub').textContent=arr.length+' OS · '+tipo+' · do mais rápido para o mais lento';
+  var html='<div style="font-size:10px;font-weight:700;color:var(--txt-s);display:grid;grid-template-columns:80px 70px 1fr 55px 55px;padding:4px 0;border-bottom:2px solid var(--lav);text-transform:uppercase;letter-spacing:.05em;"><span>OS</span><span>Cor</span><span>Tamanhos</span><span style="text-align:right">Receb.</span><span style="text-align:right">Dias</span></div>';
+  arr.forEach(function(c){
+    var d=c[diasField];
+    var corD=d<=2?'var(--ok)':d<=5?'var(--warn)':'var(--bad)';
+    var tams=c.tam?Object.keys(c.tam).map(function(t){return '<span style="display:inline-block;background:var(--lav-l);border-radius:4px;padding:1px 5px;margin:1px;font-size:10px;">'+t+': '+n(c.tam[t])+'</span>';}).join(''):'—';
+    html+='<div style="display:grid;grid-template-columns:80px 70px 1fr 55px 55px;align-items:start;padding:7px 0;border-bottom:1px solid var(--lav-l);font-size:11px;">'+
+      '<div style="font-weight:700;color:var(--roxo);">'+c.os+'</div>'+
+      '<div style="font-size:10px;color:var(--txt-s);">'+c.cor+'</div>'+
+      '<div style="line-height:1.8;">'+tams+'</div>'+
+      '<div style="text-align:right;font-size:10px;color:var(--txt-s);">'+eficFmtDate(c.dsReceb)+'</div>'+
+      '<div style="text-align:right;font-weight:800;color:'+corD+'">'+d+'d</div></div>';
+  });
+  if(!arr.length) html='<div style="color:var(--txt-s);padding:20px 0;text-align:center;">Sem dados para este modelo no período.</div>';
+  document.getElementById('eficPopBody').innerHTML=html;
+  document.getElementById('eficPop').style.display='flex';
+  document.getElementById('eficPopBkd').style.display='block';
+}
+
+
+// ── Popup detalhe de modelo (versão legada - mantida por compatibilidade)
+function eficAbrirModPop(prodCor, diasField){
+  var partes=prodCor.split('|');
+  var prod=partes[0], cor=partes[1];
+  var cruz=window._eficCruz||[];
+  var arr=cruz.filter(function(c){
+    return eficNorm(c.prod)===eficNorm(prod) && eficNorm(c.cor)===eficNorm(cor) && c[diasField]!==null;
+  }).sort(function(a,b){return a.dtReceb-b.dtReceb;});
+  var tipo=diasField==='diasRev'?'Revisão':'Linha/Embalagem';
+  document.getElementById('eficPopTitulo').textContent=prod+' · '+cor;
+  document.getElementById('eficPopSub').textContent=arr.length+' OS · '+tipo;
+  var html='<div style="font-size:10px;font-weight:700;color:var(--txt-s);display:grid;grid-template-columns:80px 1fr 55px 55px;padding:4px 0;border-bottom:2px solid var(--lav);text-transform:uppercase;letter-spacing:.05em;"><span>OS</span><span>Tamanhos</span><span style="text-align:right">Receb.</span><span style="text-align:right">Dias</span></div>';
+  arr.forEach(function(c){
+    var d=c[diasField];
+    var corD=d<=2?'var(--ok)':d<=5?'var(--warn)':'var(--bad)';
+    var tams=c.tam?Object.keys(c.tam).map(function(t){return '<span style="display:inline-block;background:var(--lav-l);border-radius:4px;padding:1px 5px;margin:1px;font-size:10px;">'+t+': '+n(c.tam[t])+'</span>';}).join(''):'—';
+    html+='<div style="display:grid;grid-template-columns:80px 1fr 55px 55px;align-items:start;padding:7px 0;border-bottom:1px solid var(--lav-l);font-size:11px;">'+
+      '<div style="font-weight:700;color:var(--roxo);">'+c.os+'</div>'+
+      '<div style="line-height:1.8;">'+tams+'</div>'+
+      '<div style="text-align:right;font-size:10px;color:var(--txt-s);">'+eficFmtDate(c.dsReceb)+'</div>'+
+      '<div style="text-align:right;font-weight:800;color:'+corD+'">'+d+'d</div></div>';
+  });
+  if(!arr.length) html='<div style="color:var(--txt-s);padding:20px 0;text-align:center;">Sem dados para este modelo no período.</div>';
+  document.getElementById('eficPopBody').innerHTML=html;
+  document.getElementById('eficPop').style.display='flex';
+  document.getElementById('eficPopBkd').style.display='block';
+}
+
+// ── Popup detalhe de OS pendente
+function eficAbrirOSPop(os, label){
+  var cruz=window._eficCruz||[];
+  var rec=cruz.find(function(c){return c.os===os;});
+  if(!rec) return;
+  document.getElementById('eficPopTitulo').textContent='OS '+os+' — '+rec.prod+' · '+rec.cor;
+  document.getElementById('eficPopSub').textContent='Pendente: '+label+' · Recebido '+eficFmtDate(rec.dsReceb);
+  var tams=rec.tam?Object.keys(rec.tam).map(function(t){
+    return '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--lav-l);font-size:12px;"><span style="font-weight:600;">'+t+'</span><span style="font-weight:800;color:var(--roxo);">'+n(rec.tam[t])+' peças</span></div>';
+  }).join(''):'<div style="color:var(--txt-s);">Sem detalhe por tamanho</div>';
+  var diasAg=eficDiffDias(rec.dtReceb,new Date());
+  var cobPct = rec.cobertura!==undefined ? Math.round(rec.cobertura*100) : null;
+  var cobCard = cobPct!==null ? '<div style="background:'+(cobPct>=80?'#fef3c7':'#fee2e2')+';border-radius:8px;padding:10px;text-align:center;"><div style="font-size:10px;font-weight:700;color:var(--txt-s);text-transform:uppercase;">Lançado até agora</div><div style="font-weight:800;color:'+(cobPct>=80?'#854d0e':'#991b1b')+'">'+cobPct+'%</div><div style="font-size:9px;color:var(--txt-s);">'+n(rec.totalLancado||0)+' de '+n(rec.total)+' pç</div></div>' : '';
+  var html='<div style="display:grid;grid-template-columns:repeat('+(cobCard?4:3)+',1fr);gap:10px;margin-bottom:14px;">'+
+    '<div style="background:var(--lav-l);border-radius:8px;padding:10px;text-align:center;"><div style="font-size:10px;font-weight:700;color:var(--txt-s);text-transform:uppercase;">Produto</div><div style="font-weight:800;color:var(--roxo);">'+rec.prod+'</div></div>'+
+    '<div style="background:var(--lav-l);border-radius:8px;padding:10px;text-align:center;"><div style="font-size:10px;font-weight:700;color:var(--txt-s);text-transform:uppercase;">Total recebido</div><div style="font-weight:800;color:var(--roxo);">'+n(rec.total)+' pç</div></div>'+
+    '<div style="background:'+(diasAg<=2?'#dcfce7':diasAg<=5?'#fef3c7':'#fee2e2')+';border-radius:8px;padding:10px;text-align:center;"><div style="font-size:10px;font-weight:700;color:var(--txt-s);text-transform:uppercase;">Dias aguardando</div><div style="font-weight:800;color:'+(diasAg<=2?'var(--ok)':diasAg<=5?'var(--warn)':'var(--bad)')+'">'+diasAg+'d</div></div>'+
+    cobCard+'</div>'+
+    '<div style="font-size:11px;font-weight:700;color:var(--txt-s);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Detalhe por tamanho</div>'+tams;
+  document.getElementById('eficPopBody').innerHTML=html;
+  document.getElementById('eficPop').style.display='flex';
+  document.getElementById('eficPopBkd').style.display='block';
+}
+
+// ── Popup KPI estratégico (revisadas / finalizadas)
+function eficAbrirKpi(tipo){
+  var arr, titulo, diasField, label;
+  if(tipo==='rev_ok'){
+    arr=(window._eficComRev||[]).filter(function(c){return c.diasRev>=0&&c.diasRev<365;});
+    titulo='Análise Estratégica — Revisão'; diasField='diasRev'; label='revisão';
+  } else {
+    arr=(window._eficComLin||[]).filter(function(c){return c.diasLin>=0&&c.diasLin<365;});
+    titulo='Análise Estratégica — Linha/Embalagem'; diasField='diasLin'; label='linha/embalagem';
+  }
+  if(!arr.length){ return; }
+
+  // Ordenar por data de PROCESSAMENTO para tendência real
+  var dateField = diasField==='diasRev' ? 'dtRev' : 'dtLin';
+  var arrCron = arr.filter(function(c){return c[dateField];}).sort(function(a,b){return a[dateField]-b[dateField];});
+  if(!arrCron.length) arrCron = arr.slice().sort(function(a,b){return a.dtReceb-b.dtReceb;});
+  var media = parseFloat((arr.reduce(function(s,c){return s+c[diasField];},0)/arr.length).toFixed(1));
+
+  // Tendência: agrupa por semana de RECEBIMENTO (igual ao gráfico) e calcula regressão linear
+  var semMapT={};
+  arr.forEach(function(c){
+    var sem=eficGetSemana(c.dtReceb); // mesma chave que o gráfico usa
+    if(!semMapT[sem]) semMapT[sem]={dias:[]};
+    semMapT[sem].dias.push(c[diasField]);
+  });
+  var semKeysT=Object.keys(semMapT).sort();
+  // Semana completa = tem pelo menos 3 OS (exclui semana atual incompleta)
+  var semCompletas = semKeysT.filter(function(s){ return semMapT[s].dias.length >= 3; });
+  var semMediasT = semCompletas.map(function(s){
+    return parseFloat((semMapT[s].dias.reduce(function(a,b){return a+b;},0)/semMapT[s].dias.length).toFixed(1));
+  });
+
+  var mediaIni, mediaFim, tendencia, tendDelta, tendSemLabel, semAnt='', semanaAtualInfo='';
+  tendSemLabel = semCompletas.length ? semCompletas[semCompletas.length-1].replace(/.*W/,'Sem ')+'/'+semCompletas[semCompletas.length-1].slice(2,4) : '';
+  semAnt = semCompletas.length>=2 ? semCompletas[0].replace(/.*W/,'Sem ')+'/'+semCompletas[0].slice(2,4) : '';
+
+  // Semana atual em andamento
+  var semAtual = semKeysT[semKeysT.length-1];
+  if(semAtual && semCompletas.indexOf(semAtual)<0){
+    var nAtual=semMapT[semAtual].dias.length;
+    var mAtual=parseFloat((semMapT[semAtual].dias.reduce(function(a,b){return a+b;},0)/nAtual).toFixed(1));
+    semanaAtualInfo=nAtual+' OS): '+mAtual+'d';
+  }
+
+  if(semMediasT.length>=2){
+    // Regressão linear: y = a + b*x onde x=índice da semana, y=média de dias
+    // b negativo = tempo caindo = melhora. b positivo = tempo subindo = piora.
+    var n=semMediasT.length, sumX=0,sumY=0,sumXY=0,sumX2=0;
+    semMediasT.forEach(function(v,i){ sumX+=i; sumY+=v; sumXY+=i*v; sumX2+=i*i; });
+    var b = (n*sumXY - sumX*sumY) / (n*sumX2 - sumX*sumX);
+    var a = (sumY - b*sumX)/n;
+    mediaIni = parseFloat(a.toFixed(1));
+    mediaFim = parseFloat((a + b*(n-1)).toFixed(1));
+    var delta = mediaFim - mediaIni; // negativo = melhora
+    tendDelta = Math.abs(delta).toFixed(1);
+    var isSignificativo = Math.abs(delta) > 0.3;
+
+    if(b < -0.2)      tendencia = '📉 evolução consistente';
+    else if(b < 0)    tendencia = '📉 leve melhora';
+    else if(b <= 0.2) tendencia = '➡️ estável';
+    else              tendencia = '⚠️ tempo aumentando';
+
+    semAnt = semCompletas[0].replace(/.*W/,'Sem ')+'/'+semCompletas[0].slice(2,4);
+    tendSemLabel = semCompletas[semCompletas.length-1].replace(/.*W/,'Sem ')+'/'+semCompletas[semCompletas.length-1].slice(2,4);
+  } else {
+    mediaIni = media; mediaFim = media; tendSemLabel=''; semAnt='';
+    tendencia = '➡️ dados insuficientes'; tendDelta='0'; var delta=0; var isSignificativo=false;
+  }
+
+  // Distribuição por faixas de dias (em vez de percentis cumulativos que somam >100%)
+  var faixas = [{lbl:'0-1d',min:0,max:1},{lbl:'2-3d',min:2,max:3},{lbl:'4-7d',min:4,max:7},{lbl:'8+d',min:8,max:9999}];
+  var total = arr.length;
+  faixas.forEach(function(f){
+    f.count = arr.filter(function(c){return c[diasField]>=f.min && c[diasField]<=f.max;}).length;
+    f.pct = Math.round(f.count/total*100);
+  });
+  var faixaCores = ['#dcfce7','#dbeafe','#fef3c7','#fee2e2'];
+  var faixaTxt   = ['#166534','#1e40af','#854d0e','#991b1b'];
+
+  // Quem puxa a média pra cima: modelos com média > media geral
+  var porMod={};
+  arr.forEach(function(c){
+    var k=eficNorm(c.prod);
+    if(!porMod[k]) porMod[k]={prod:c.prod,dias:[],total:0};
+    porMod[k].dias.push(c[diasField]); porMod[k].total+=c.total;
+  });
+  var modStats=Object.values(porMod).map(function(m){
+    var med=parseFloat((m.dias.reduce(function(a,b){return a+b;},0)/m.dias.length).toFixed(1));
+    var peso=m.dias.length/arr.length;
+    var impacto=parseFloat(((med-media)*peso).toFixed(2));
+    return {prod:m.prod,media:med,count:m.dias.length,total:m.total,impacto:impacto};
+  }).sort(function(a,b){return b.impacto-a.impacto;});
+  var puxamCima=modStats.filter(function(m){return m.impacto>0;}).slice(0,5);
+  var puxamBaixo=modStats.filter(function(m){return m.impacto<0;}).slice(-3).reverse();
+
+  // Semanas para tendência visual
+  var semMap={};
+  arrCron.forEach(function(c){
+    var sem=eficGetSemana(c.dtReceb);
+    if(!semMap[sem]) semMap[sem]={dias:[],sem:sem};
+    semMap[sem].dias.push(c[diasField]);
+  });
+  var semKeys=Object.keys(semMap).sort();
+  var semLabels=semKeys.map(function(s){return 'Sem '+s.split('-W')[1];});
+  var semVals=semKeys.map(function(s){return parseFloat((semMap[s].dias.reduce(function(a,b){return a+b;},0)/semMap[s].dias.length).toFixed(1));});
+
+  document.getElementById('eficPopTitulo').textContent=titulo;
+  document.getElementById('eficPopSub').textContent=arr.length+' OS analisadas · média geral: '+media+'d';
+
+  var html='';
+
+  // Bloco de tendência
+  var tendCor = delta<-0.5?'#dcfce7' : delta<0?'#f0fdf4' : delta<=0.5?'#f3f4f6':'#fef9c3';
+  var tendTxt = delta<-0.5?'#166534' : delta<0?'#166534' : delta<=0.5?'#374151':'#854d0e';
+  html+='<div style="background:'+tendCor+';border-radius:10px;padding:12px 16px;margin-bottom:14px;">'+
+    '<div style="font-size:11px;font-weight:700;text-transform:uppercase;color:'+tendTxt+';letter-spacing:.05em;margin-bottom:6px;">Tendência do período ('+semMediasT.length+' semanas)</div>'+
+    '<div style="font-size:18px;font-weight:800;color:'+tendTxt+';">'+tendencia+'</div>'+
+    '<div style="font-size:12px;color:'+tendTxt+';margin-top:4px;">'+
+      (semMediasT.length>=2?'Início: ~<strong>'+mediaIni+'d</strong> → Agora: ~<strong>'+mediaFim+'d</strong> (variação real: '+(delta<0?'':'+')+parseFloat(delta).toFixed(1)+'d no período)':'')+
+    '</div>'+
+    (semanaAtualInfo?'<div style="font-size:10px;color:'+tendTxt+';margin-top:4px;opacity:.75;">⏳ Sem. atual em andamento ('+semanaAtualInfo+' — não incluída</div>':'')+
+    '</div>';
+
+  // Distribuição por faixas (cada barra = % das OS naquela faixa, somam 100%)
+  html+='<div style="margin-bottom:14px;"><div style="font-size:11px;font-weight:700;color:var(--txt-s);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Distribuição de OS por tempo (total = 100%)</div>';
+  html+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">';
+  faixas.forEach(function(f,i){
+    html+='<div style="background:'+faixaCores[i]+';border-radius:8px;padding:10px;text-align:center;">'+
+      '<div style="font-size:9px;font-weight:700;color:'+faixaTxt[i]+';text-transform:uppercase;">'+f.lbl+'</div>'+
+      '<div style="font-size:22px;font-weight:800;color:'+faixaTxt[i]+';">'+f.pct+'%</div>'+
+      '<div style="font-size:10px;color:'+faixaTxt[i]+';">'+f.count+' OS</div></div>';
+  });
+  html+='</div></div>';
+
+  // O que puxa a média pra cima
+  if(puxamCima.length){
+    html+='<div style="font-size:11px;font-weight:700;color:var(--bad);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">⬆️ Modelos que mais elevam a média</div>';
+    puxamCima.forEach(function(m){
+      var pct=Math.round((m.media/media-1)*100);
+      html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--lav-l);font-size:12px;">'+
+        '<div><span style="font-weight:700;">'+m.prod+'</span><span style="color:var(--txt-s);font-size:10px;"> · '+m.count+' OS</span></div>'+
+        '<div style="text-align:right;"><span style="font-weight:800;color:var(--bad);">'+m.media+'d</span>'+
+        '<span style="font-size:10px;color:var(--bad);"> (+'+pct+'% da média)</span></div></div>';
+    });
+    html+='<div style="font-size:10px;color:var(--txt-s);margin-top:4px;margin-bottom:12px;">Priorizar esses modelos reduziria a média geral do período.</div>';
+  }
+
+  // O que puxa pra baixo (pontos positivos)
+  if(puxamBaixo.length){
+    html+='<div style="font-size:11px;font-weight:700;color:var(--ok);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">⬇️ Modelos processados mais rápido que a média</div>';
+    puxamBaixo.forEach(function(m){
+      var pct=Math.round((1-m.media/media)*100);
+      html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--lav-l);font-size:12px;">'+
+        '<div><span style="font-weight:700;">'+m.prod+'</span><span style="color:var(--txt-s);font-size:10px;"> · '+m.count+' OS</span></div>'+
+        '<div style="text-align:right;"><span style="font-weight:800;color:var(--ok);">'+m.media+'d</span>'+
+        '<span style="font-size:10px;color:var(--ok);"> ('+pct+'% mais rápido)</span></div></div>';
+    });
+  }
+
+  // Mini gráfico de tendência semanal em SVG
+  if(semVals.length>1){
+    html+='<div style="margin-top:14px;"><div style="font-size:11px;font-weight:700;color:var(--txt-s);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Evolução semanal (dias médios)</div>';
+    var maxV=Math.max.apply(null,semVals)||1;
+    var minV=Math.min.apply(null,semVals);
+    var w=560,h=80,pad=8;
+    var pts=semVals.map(function(v,i){
+      var x=pad+(i/(Math.max(semVals.length-1,1)))*(w-pad*2);
+      var y=h-pad-(v-minV)/(Math.max(maxV-minV,1))*(h-pad*2);
+      return x+','+y;
+    });
+    var polyline='<polyline points="'+pts.join(' ')+'" fill="none" stroke="var(--roxo)" stroke-width="2.5" stroke-linejoin="round"/>';
+    var dots=semVals.map(function(v,i){
+      var x=pad+(i/(Math.max(semVals.length-1,1)))*(w-pad*2);
+      var y=h-pad-(v-minV)/(Math.max(maxV-minV,1))*(h-pad*2);
+      return '<circle cx="'+x+'" cy="'+y+'" r="4" fill="var(--roxo)"/><text x="'+x+'" y="'+(y-8)+'" text-anchor="middle" font-size="9" fill="var(--txt-s)">'+v+'d</text>';
+    }).join('');
+    var xlabels=semLabels.map(function(lb,i){
+      var x=pad+(i/(Math.max(semLabels.length-1,1)))*(w-pad*2);
+      return '<text x="'+x+'" y="'+(h+4)+'" text-anchor="middle" font-size="9" fill="var(--txt-s)">'+lb+'</text>';
+    }).join('');
+    html+='<svg width="100%" viewBox="0 0 '+(w)+' '+(h+14)+'" style="overflow:visible;">'+polyline+dots+xlabels+'</svg></div>';
+  }
+
+  document.getElementById('eficPopBody').innerHTML=html;
+  document.getElementById('eficPop').style.display='flex';
+  document.getElementById('eficPopBkd').style.display='block';
+}
+
+function fecharEficPop(){
+  document.getElementById('eficPop').style.display='none';
+  document.getElementById('eficPopBkd').style.display='none';
+}
+
+// ── Tabela de detalhe sortável (Rev e Lin)
+var _eficDetalheSort = {}; // elId → {col, asc}
+function eficRenderDetalheTable(elId, rows, cenario, sortCol, sortAsc){
+  if(sortAsc===undefined) sortAsc = true; // padrão: menor primeiro
+  _eficDetalheSort[elId] = {col:sortCol||'media', asc:sortAsc, rows:rows, cenario:cenario};
+  var isLin = cenario==='diasLin';
+  var sorted = rows.slice().sort(function(a,b){
+    var va=a[_eficDetalheSort[elId].col], vb=b[_eficDetalheSort[elId].col];
+    if(va===null||va===undefined) va=9999;
+    if(vb===null||vb===undefined) vb=9999;
+    return sortAsc ? va-vb : vb-va;
+  });
+
+  function thBtn(label, col, align){
+    var active = _eficDetalheSort[elId].col===col;
+    var arrow = active ? (sortAsc?'↑':'↓') : '↕';
+    return '<span data-eficsort="'+elId+'|||'+col+'" style="text-align:'+align+';cursor:pointer;user-select:none;'+(active?'color:var(--roxo);':'')+'">'+label+' <span style="font-size:9px;">'+arrow+'</span></span>';
+  }
+
+  var cols = isLin ? '1fr 55px 50px 45px 40px 40px' : '1fr 55px 45px 40px 40px';
+  var hdr = '<div style="display:grid;grid-template-columns:'+cols+';padding:5px 0;border-bottom:2px solid var(--lav);font-size:10px;font-weight:700;color:var(--txt-s);text-transform:uppercase;letter-spacing:.05em;">'+
+    '<span>Modelo · Cor · Tamanhos</span>'+
+    thBtn('Média','media','right')+
+    (isLin?thBtn('Rev→Lin','mediaRL','right'):'')+
+    thBtn('Min','min','right')+
+    thBtn('Max','max','right')+
+    thBtn('OS','count','right')+
+    '</div>';
+
+  var rows_html = '';
+  sorted.slice(0,60).forEach(function(d){
+    var cor=isLin?(d.media<=5?'var(--ok)':d.media<=14?'var(--warn)':'var(--bad)'):(d.media<=3?'var(--ok)':d.media<=7?'var(--warn)':'var(--bad)');
+    var tams=d.tamTotal?Object.keys(d.tamTotal).map(function(t){return t+': '+n(d.tamTotal[t]);}).join(' · '):'';
+    var rl=isLin?(d.mediaRL!==null&&d.mediaRL!==undefined?d.mediaRL+'d':'—'):'';
+    var plTag=d.isSomLin?'<span style="font-size:12px;margin-left:3px;" title="Vem direto de produção para linha/embalagem">⚡</span>':'';
+    rows_html+='<div style="padding:6px 0;border-bottom:1px solid var(--lav-l);font-size:11px;">'+
+      '<div style="display:grid;grid-template-columns:'+cols+';align-items:baseline;">'+
+      '<div><span style="font-weight:700;color:var(--txt);">'+d.prod+plTag+'</span><span style="color:var(--txt-s);"> · '+d.cor+'</span></div>'+
+      '<div style="text-align:right;font-weight:800;color:'+cor+'">'+d.media+'d</div>'+
+      (isLin?'<div style="text-align:right;color:var(--txt-s);font-size:10px;">'+rl+'</div>':'')+
+      '<div style="text-align:right;color:var(--ok);font-size:10px;">'+d.min+'d</div>'+
+      '<div style="text-align:right;color:var(--bad);font-size:10px;">'+d.max+'d</div>'+
+      '<div style="text-align:right;color:var(--txt-s);font-size:10px;">'+d.count+'</div></div>'+
+      (tams?'<div style="font-size:10px;color:var(--txt-s);margin-top:2px;padding-left:4px;">'+tams+'</div>':'')+
+      '</div>';
+  });
+  if(sorted.length>60) rows_html+='<div style="font-size:11px;color:var(--txt-s);padding:6px 0;">...e mais '+(sorted.length-60)+' linhas</div>';
+  var el=document.getElementById(elId);
+  if(el) el.innerHTML=hdr+rows_html;
+}
+
+function eficShowTooltip(el, evt){
+  var raw = el.getAttribute('data-eficad');
+  if(!raw) return;
+  var parts = raw.split('|||');
+  var insight = parts[1] ? decodeURIComponent(parts[1]) : '';
+  if(!insight) return;
+  var tt = document.getElementById('eficTooltip');
+  if(!tt){ tt=document.createElement('div'); tt.id='eficTooltip'; tt.style.cssText='position:fixed;z-index:500;background:#1e1b4b;color:#fff;border-radius:10px;padding:10px 14px;font-size:12px;line-height:1.6;max-width:280px;box-shadow:0 8px 24px rgba(0,0,0,.3);pointer-events:none;transition:opacity .15s;'; document.body.appendChild(tt); }
+  tt.textContent = insight;
+  tt.style.opacity='0';
+  tt.style.display='block';
+  var rect = el.getBoundingClientRect();
+  var top = rect.bottom + 8;
+  var left = rect.left;
+  if(left + 280 > window.innerWidth) left = window.innerWidth - 290;
+  if(top + 80 > window.innerHeight) top = rect.top - 88;
+  tt.style.top = top+'px';
+  tt.style.left = left+'px';
+  tt.style.opacity='1';
+}
+
+function eficHideTooltip(){
+  var tt = document.getElementById('eficTooltip');
+  if(tt) tt.style.display='none';
+}
 
 function toast(msg){
   var t=document.getElementById('toast');
