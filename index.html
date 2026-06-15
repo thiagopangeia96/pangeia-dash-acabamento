@@ -349,6 +349,40 @@ td.mn{font-family:monospace;font-size:11px;color:var(--txt-s);}
   </div>
 
   <div class="tc" id="tab-qual">
+    <!-- Filtro de perdas -->
+    <div class="card" style="margin-bottom:14px;">
+      <div class="ct">🔍 Filtro de Perdas <span>filtre por modelo, O.S., facção ou cor para ver o detalhamento</span></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:10px;">
+        <div><label style="font-size:10px;font-weight:700;color:var(--txt-s);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:4px;">Modelo</label>
+          <input id="qFiltMod" type="text" placeholder="Ex: PÉROLA, ALICIA..." class="fi" oninput="renderQualFiltro()"></div>
+        <div><label style="font-size:10px;font-weight:700;color:var(--txt-s);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:4px;">O.S.</label>
+          <input id="qFiltOS" type="text" placeholder="Ex: 1856, 1520..." class="fi" oninput="renderQualFiltro()"></div>
+        <div><label style="font-size:10px;font-weight:700;color:var(--txt-s);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:4px;">Facção</label>
+          <input id="qFiltFac" type="text" placeholder="Ex: CKL, MAXIONY..." class="fi" oninput="renderQualFiltro()"></div>
+        <div><label style="font-size:10px;font-weight:700;color:var(--txt-s);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:4px;">Cor</label>
+          <input id="qFiltCor" type="text" placeholder="Ex: PRETO, OFF WHITE..." class="fi" oninput="renderQualFiltro()"></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button onclick="limparFiltrosQual()" style="padding:6px 14px;background:#f3f4f6;color:var(--txt-s);border:1px solid var(--brd);border-radius:8px;font-size:11px;cursor:pointer;">✕ Limpar filtros</button>
+        <span id="qFiltInfo" style="font-size:11px;color:var(--txt-s);"></span>
+      </div>
+    </div>
+
+    <!-- Resultado do filtro -->
+    <div id="qFiltResult" style="display:none;margin-bottom:14px;">
+      <div class="g2" style="margin-bottom:10px;">
+        <div class="card">
+          <div class="ct">📊 Totais de Perdas — resultado filtrado</div>
+          <div id="qFiltKpis" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;"></div>
+        </div>
+        <div class="card">
+          <div class="ct">📋 Perdas por Categoria — detalhado</div>
+          <div id="qFiltTabela" style="max-height:260px;overflow-y:auto;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPIs gerais (sempre visíveis) -->
     <div class="kpi-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:14px;">
       <div class="kpi"><div class="kpi-lbl" style="color:var(--c-rev)">Total Revisado</div><div class="kpi-val" style="color:var(--c-rev)" id="qT">—</div><div class="kpi-sub">no período</div></div>
       <div class="kpi"><div class="kpi-lbl" style="color:var(--bad)">Total Defeitos</div><div class="kpi-val" style="color:var(--bad)" id="qD">—</div><div class="kpi-sub" id="qDP">—</div></div>
@@ -377,6 +411,20 @@ td.mn{font-family:monospace;font-size:11px;color:var(--txt-s);}
         <div class="ct">O.S. com mais defeitos</div>
         <div class="tw"><table><thead><tr><th>O.S. / Modelo</th><th>Facção</th><th class="r">Bazar</th><th class="r">Conserto</th><th class="r">Sujo</th><th class="r">% Def.</th></tr></thead><tbody id="tbOS"></tbody></table></div>
       </div>
+    </div>
+
+    <!-- Ranking geral de defeitos por modelo -->
+    <div class="card" style="margin-top:14px;">
+      <div class="ct">📊 Defeitos por Modelo <span>total geral · do maior para o menor</span></div>
+      <div class="tw"><table><thead><tr>
+        <th>Modelo</th>
+        <th class="r">Revisado</th>
+        <th class="r" style="color:var(--bad)">Total Def.</th>
+        <th class="r" style="color:var(--warn)">Bazar</th>
+        <th class="r" style="color:var(--bad)">Conserto</th>
+        <th class="r" style="color:#5C4A1E">Sujo</th>
+        <th class="r">% Def.</th>
+      </tr></thead><tbody id="tbQualMod"></tbody></table></div>
     </div>
   </div>
 
@@ -1551,6 +1599,33 @@ function renderQual(){
       +'<td class="r" style="color:#5C4A1E">'+n(o.suj||0)+'</td>'
       +'<td class="r"><span class="pill '+pc3+'">'+dp+'%</span></td></tr>';
   });
+
+  // Ranking geral de defeitos por modelo
+  var pm={};
+  rq.forEach(function(r){
+    // extrai só o nome do modelo (antes do ' — ')
+    var modNome = r.mod ? r.mod.split(' — ')[0].split(' - ')[0].trim() : r.mod;
+    if(!pm[modNome]) pm[modNome]={mod:modNome,tot:0,baz:0,con:0,suj:0};
+    pm[modNome].tot+=r.tot; pm[modNome].baz+=r.baz; pm[modNome].con+=r.con; pm[modNome].suj+=(r.suj||0);
+  });
+  var modRank=Object.values(pm)
+    .filter(function(m){return m.baz+m.con+m.suj>0;})
+    .sort(function(a,b){return (b.baz+b.con+b.suj)-(a.baz+a.con+a.suj);});
+  var tb3=document.getElementById('tbQualMod'); if(!tb3) return; tb3.innerHTML='';
+  modRank.forEach(function(m,i){
+    var def=m.baz+m.con+m.suj;
+    var dp=m.tot?((def/m.tot)*100).toFixed(1):0;
+    var pc3=dp>10?'p-bd':dp>5?'p-wn':'p-ok';
+    tb3.innerHTML+='<tr>'
+      +'<td><strong style="font-size:12px;">'+(i+1)+'. '+m.mod+'</strong></td>'
+      +'<td class="r">'+n(m.tot)+'</td>'
+      +'<td class="r"><strong style="color:var(--bad)">'+n(def)+'</strong></td>'
+      +'<td class="r" style="color:var(--warn)">'+n(m.baz)+'</td>'
+      +'<td class="r" style="color:var(--bad)">'+n(m.con)+'</td>'
+      +'<td class="r" style="color:#5C4A1E">'+n(m.suj)+'</td>'
+      +'<td class="r"><span class="pill '+pc3+'">'+dp+'%</span></td></tr>';
+  });
+  if(!modRank.length) tb3.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--txt-s);padding:16px;">Nenhum defeito registrado no período</td></tr>';
 }
 
 // ── MCT ───────────────────────────────────────────────────────────────────────
@@ -4319,6 +4394,96 @@ function eficShowTooltip(el, evt){
 function eficHideTooltip(){
   var tt = document.getElementById('eficTooltip');
   if(tt) tt.style.display='none';
+}
+
+function limparFiltrosQual(){
+  ['qFiltMod','qFiltOS','qFiltFac','qFiltCor'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
+  renderQualFiltro();
+}
+
+function renderQualFiltro(){
+  var mod  = (document.getElementById('qFiltMod')||{value:''}).value.trim().toUpperCase();
+  var os   = (document.getElementById('qFiltOS')||{value:''}).value.trim().toUpperCase();
+  var fac  = (document.getElementById('qFiltFac')||{value:''}).value.trim().toUpperCase();
+  var cor  = (document.getElementById('qFiltCor')||{value:''}).value.trim().toUpperCase();
+  var temFiltro = mod||os||fac||cor;
+
+  var result = document.getElementById('qFiltResult');
+  var info   = document.getElementById('qFiltInfo');
+  if(!temFiltro){ if(result) result.style.display='none'; if(info) info.textContent=''; return; }
+
+  var base = baseFiltrada();
+  var rq = base.filter(function(r){ return r.tipo===TIPO_REV; });
+
+  var filtrada = rq.filter(function(r){
+    var nm = function(s){ return (s||'').toString().toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); };
+    if(mod && nm(r.mod).indexOf(nm(mod))<0) return false;
+    if(os  && nm(r.os).indexOf(nm(os))<0)   return false;
+    if(fac && nm(r.fac).indexOf(nm(fac))<0) return false;
+    if(cor && nm(r.cor).indexOf(nm(cor))<0) return false;
+    return true;
+  });
+
+  if(info) info.textContent = filtrada.length+' registro(s)';
+  if(result) result.style.display = filtrada.length ? '' : 'none';
+  if(!filtrada.length) return;
+
+  // Totais gerais do filtro
+  var totRev = filtrada.reduce(function(s,r){return s+r.tot;},0);
+  var totBaz = filtrada.reduce(function(s,r){return s+r.baz;},0);
+  var totCon = filtrada.reduce(function(s,r){return s+r.con;},0);
+  var totSuj = filtrada.reduce(function(s,r){return s+r.suj;},0);
+  var totPerd = totBaz+totCon+totSuj;
+
+  var kpiEl = document.getElementById('qFiltKpis');
+  if(kpiEl) kpiEl.innerHTML =
+    '<div style="background:var(--lav-l);border-radius:8px;padding:10px;text-align:center;"><div style="font-size:10px;font-weight:700;color:var(--txt-s);text-transform:uppercase;">Total Revisado</div><div style="font-size:20px;font-weight:800;color:var(--roxo)">'+n(totRev)+'</div></div>'+
+    '<div style="background:#fef3c7;border-radius:8px;padding:10px;text-align:center;"><div style="font-size:10px;font-weight:700;color:#854d0e;text-transform:uppercase;">Bazar</div><div style="font-size:20px;font-weight:800;color:#854d0e">'+n(totBaz)+'</div><div style="font-size:10px;color:#854d0e">'+pct(totBaz,totRev)+' do rev.</div></div>'+
+    '<div style="background:#fee2e2;border-radius:8px;padding:10px;text-align:center;"><div style="font-size:10px;font-weight:700;color:#991b1b;text-transform:uppercase;">Conserto</div><div style="font-size:20px;font-weight:800;color:#991b1b">'+n(totCon)+'</div><div style="font-size:10px;color:#991b1b">'+pct(totCon,totRev)+' do rev.</div></div>'+
+    '<div style="background:#f5f0e8;border-radius:8px;padding:10px;text-align:center;"><div style="font-size:10px;font-weight:700;color:#5C4A1E;text-transform:uppercase;">Sujo</div><div style="font-size:20px;font-weight:800;color:#5C4A1E">'+n(totSuj)+'</div><div style="font-size:10px;color:#5C4A1E">'+pct(totSuj,totRev)+' do rev.</div></div>';
+
+  // Tabela agrupada por Modelo · OS · Cor
+  var grupos={};
+  filtrada.forEach(function(r){
+    var k = r.mod+'|||'+r.os+'|||'+r.cor+'|||'+r.fac;
+    if(!grupos[k]) grupos[k]={mod:r.mod,os:r.os,cor:r.cor,fac:r.fac,tot:0,baz:0,con:0,suj:0};
+    grupos[k].tot+=r.tot; grupos[k].baz+=r.baz; grupos[k].con+=r.con; grupos[k].suj+=r.suj;
+  });
+  var arr = Object.values(grupos).sort(function(a,b){return (b.baz+b.con+b.suj)-(a.baz+a.con+a.suj);});
+
+  var hdr='<div style="font-size:10px;font-weight:700;color:var(--txt-s);display:grid;grid-template-columns:1fr 80px 70px 70px 60px 60px 60px;padding:4px 0;border-bottom:2px solid var(--lav);text-transform:uppercase;letter-spacing:.05em;">'+
+    '<span>Modelo · OS · Cor</span><span style="text-align:right">Facção</span><span style="text-align:right">Revisado</span><span style="text-align:right">Total Perd.</span>'+
+    '<span style="text-align:right;color:var(--warn)">Bazar</span><span style="text-align:right;color:var(--bad)">Conserto</span><span style="text-align:right;color:#5C4A1E">Sujo</span></div>';
+
+  var rows='';
+  arr.forEach(function(d){
+    var perd=d.baz+d.con+d.suj;
+    var pPerd=d.tot?((perd/d.tot)*100).toFixed(1)+'%':'—';
+    var corPill=perd/Math.max(d.tot,1)>0.1?'var(--bad)':perd/Math.max(d.tot,1)>0.05?'var(--warn)':'var(--ok)';
+    rows+='<div style="display:grid;grid-template-columns:1fr 80px 70px 70px 60px 60px 60px;align-items:center;padding:6px 0;border-bottom:1px solid var(--lav-l);font-size:11px;">'+
+      '<div><span style="font-weight:700;color:var(--txt);">'+d.mod+'</span>'+
+        (d.os?'<span style="font-size:9px;color:var(--txt-s);display:block;">OS '+d.os+'</span>':'')+
+        '<span style="font-size:9px;color:var(--txt-s);">'+d.cor+'</span></div>'+
+      '<div style="text-align:right;font-size:10px;color:var(--txt-s);">'+d.fac+'</div>'+
+      '<div style="text-align:right;color:var(--txt-s);">'+n(d.tot)+'</div>'+
+      '<div style="text-align:right;font-weight:800;"><span style="background:'+(perd>0?corPill:'var(--ok)')+';color:#fff;border-radius:4px;padding:1px 6px;">'+n(perd)+'</span> <span style="font-size:9px;color:var(--txt-s);">'+pPerd+'</span></div>'+
+      '<div style="text-align:right;color:var(--warn);font-weight:600;">'+n(d.baz)+'</div>'+
+      '<div style="text-align:right;color:var(--bad);font-weight:600;">'+n(d.con)+'</div>'+
+      '<div style="text-align:right;color:#5C4A1E;font-weight:600;">'+n(d.suj)+'</div></div>';
+  });
+
+  // Totalizador no rodapé
+  rows+='<div style="display:grid;grid-template-columns:1fr 80px 70px 70px 60px 60px 60px;align-items:center;padding:8px 0;border-top:2px solid var(--lav);font-size:11px;font-weight:800;background:var(--lav-l);border-radius:0 0 6px 6px;">'+
+    '<div style="padding-left:4px;">TOTAL ('+arr.length+' grupos)</div>'+
+    '<div></div>'+
+    '<div style="text-align:right;">'+n(totRev)+'</div>'+
+    '<div style="text-align:right;"><span style="background:var(--bad);color:#fff;border-radius:4px;padding:1px 6px;">'+n(totPerd)+'</span> <span style="font-size:9px;color:var(--txt-s);">'+pct(totPerd,totRev)+'</span></div>'+
+    '<div style="text-align:right;color:var(--warn);">'+n(totBaz)+'</div>'+
+    '<div style="text-align:right;color:var(--bad);">'+n(totCon)+'</div>'+
+    '<div style="text-align:right;color:#5C4A1E;">'+n(totSuj)+'</div></div>';
+
+  var tbl=document.getElementById('qFiltTabela');
+  if(tbl) tbl.innerHTML=hdr+rows;
 }
 
 function toast(msg){
