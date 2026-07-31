@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pangeia · Dash TV — Produção Acabamento</title>
+<style>
+:root{
+  --roxo:#592C95;--roxo-esc:#3D1B6B;--roxo-prof:#1E0F3D;--roxo-cl:#AE76E5;
+  --lav:#E4D4F9;--lav-l:#F5EEFB;
+  --ouro:#FFD23F;--ouro-esc:#C99700;
+  --prata:#D7DCEA;--prata-esc:#8E96AD;
+  --bronze:#E09A5B;--bronze-esc:#9C5A1F;
+  --glass:rgba(255,255,255,.07);--glass-brd:rgba(255,255,255,.14);
+  --txt:#FFFFFF;--txt-s:#CBB8EC;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{
+  font-family:-apple-system,'Segoe UI',sans-serif;color:var(--txt);
+  background:radial-gradient(1200px 600px at 85% -10%,rgba(174,118,229,.28),transparent 60%),
+             radial-gradient(900px 500px at -10% 110%,rgba(89,44,149,.55),transparent 60%),
+             linear-gradient(160deg,var(--roxo-prof) 0%,var(--roxo-esc) 55%,#2A1655 100%);
+  height:100vh;overflow:hidden;padding:0 26px 18px;font-size:16px;color-scheme:dark;
+}
+.wrap{max-width:1880px;margin:0 auto;display:flex;flex-direction:column;gap:14px;height:100%;}
+
+/* ── TOPBAR ── */
+.topbar{
+  background:linear-gradient(135deg,rgba(42,22,85,.88),rgba(61,27,107,.88));
+  border:1px solid var(--glass-brd);backdrop-filter:blur(12px);
+  border-radius:0 0 16px 16px;padding:9px 24px;display:flex;justify-content:space-between;align-items:center;gap:20px;
+  position:sticky;top:0;z-index:60;overflow:hidden;
+  box-shadow:0 8px 28px rgba(0,0,0,.35);
+}
+.topbar::before{content:'';position:absolute;right:-60px;top:-60px;width:240px;height:240px;background:var(--roxo-cl);opacity:.12;border-radius:50%;}
+.tb-l{display:flex;align-items:center;gap:16px;position:relative;z-index:1;}
+.bear-badge{
+  width:44px;height:44px;border-radius:50%;background:#fff;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  box-shadow:0 0 0 2px rgba(255,255,255,.15),0 4px 12px rgba(0,0,0,.35);
+}
+.bear-badge svg{width:29px;height:29px;display:block;}
+.brand-name{font-size:21px;font-weight:900;color:#fff;letter-spacing:3px;line-height:1;}
+.brand-sub{font-size:10px;font-weight:700;color:var(--txt-s);letter-spacing:2px;text-transform:uppercase;margin-top:3px;}
+.tb-title{position:relative;z-index:1;text-align:center;flex:1;min-width:260px;}
+.tb-title h1{font-size:27px;font-weight:800;color:#fff;line-height:1.1;letter-spacing:.01em;}
+.tb-title h1 span{color:var(--roxo-cl);}
+.tb-r{position:relative;z-index:1;text-align:right;}
+.clock{font-size:38px;font-weight:800;color:#fff;font-variant-numeric:tabular-nums;line-height:1;letter-spacing:1px;text-shadow:0 0 20px rgba(174,118,229,.45);}
+.clock-date{font-size:12px;color:var(--txt-s);font-weight:600;margin-top:4px;text-transform:capitalize;}
+
+/* ── FILTRO ── */
+.filtro{
+  background:var(--glass);border:1px solid var(--glass-brd);backdrop-filter:blur(10px);
+  border-radius:14px;padding:5px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+}
+.ft-lbl{font-size:12px;font-weight:800;color:var(--txt-s);text-transform:uppercase;letter-spacing:.12em;margin-right:4px;}
+.dg{display:flex;align-items:center;gap:8px;}
+.dg label{font-size:13px;color:var(--txt-s);font-weight:600;}
+input[type=date]{
+  background:rgba(255,255,255,.10);border:1px solid var(--glass-brd);color:#fff;
+  padding:5px 12px;border-radius:8px;font-size:14px;font-family:inherit;outline:none;cursor:pointer;
+}
+.status{margin-left:auto;font-size:13px;color:var(--txt-s);font-weight:600;display:flex;align-items:center;gap:8px;}
+.live-dot{width:9px;height:9px;border-radius:50%;background:#7CE3B1;box-shadow:0 0 10px #7CE3B1;animation:pulse 2.4s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.35;}}
+
+/* ── RANKINGS ── */
+.rank-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;flex:1;align-items:stretch;min-height:0;}
+.rank-card{
+  background:var(--glass);border:1px solid var(--glass-brd);backdrop-filter:blur(10px);
+  border-radius:18px;display:flex;flex-direction:column;overflow:hidden;min-height:0;
+}
+.rank-hdr{padding:8px 22px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--glass-brd);}
+.rank-hdr .rk-title{font-size:19px;font-weight:800;color:#fff;letter-spacing:.02em;display:flex;align-items:center;gap:10px;}
+.rk-chip{width:11px;height:24px;border-radius:6px;flex-shrink:0;}
+.rank-card.lin .rk-chip{background:linear-gradient(180deg,#fff,var(--roxo-cl));}
+.rank-card.rev .rk-chip{background:linear-gradient(180deg,var(--roxo-cl),var(--roxo));}
+.rk-total{text-align:right;font-size:10px;font-weight:700;color:var(--txt-s);text-transform:uppercase;letter-spacing:.08em;display:flex;align-items:center;gap:10px;}
+.rk-total strong{font-size:22px;font-weight:800;color:#fff;font-variant-numeric:tabular-nums;line-height:1;letter-spacing:.01em;}
+.rank-cols{display:flex;align-items:center;gap:14px;padding:7px 22px 5px;font-size:10px;font-weight:800;color:var(--txt-s);text-transform:uppercase;letter-spacing:.1em;}
+.rank-cols .c-pos{width:45px;text-align:center;}
+.rank-cols .c-nome{flex:1;}
+.rank-cols .c-qtd{width:95px;text-align:right;}
+.rank-body{flex:1;overflow-y:auto;padding:0 16px 16px;scroll-behavior:smooth;scrollbar-width:none;}
+.rank-body::-webkit-scrollbar{display:none;}
+
+.rk-row{
+  display:flex;align-items:center;gap:12px;padding:8px 12px;border-radius:12px;
+  border:1px solid transparent;margin-bottom:5px;animation:fadein .5s ease both;
+}
+@keyframes fadein{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+.rk-row.medal-1{background:linear-gradient(90deg,rgba(255,210,63,.16),rgba(255,210,63,.03));border-color:rgba(255,210,63,.35);}
+.rk-row.medal-2{background:linear-gradient(90deg,rgba(215,220,234,.13),rgba(215,220,234,.02));border-color:rgba(215,220,234,.28);}
+.rk-row.medal-3{background:linear-gradient(90deg,rgba(224,154,91,.14),rgba(224,154,91,.02));border-color:rgba(224,154,91,.30);}
+
+/* medalhas */
+.rk-pos{width:40px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.medal{
+  width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:16px;font-weight:900;position:relative;color:#3D1B6B;
+  box-shadow:0 3px 10px rgba(0,0,0,.35),inset 0 2px 3px rgba(255,255,255,.55),inset 0 -2px 3px rgba(0,0,0,.22);
+}
+.medal::after{
+  content:'';position:absolute;top:-6px;left:50%;transform:translateX(-50%);
+  border-left:6px solid transparent;border-right:6px solid transparent;border-top:7px solid rgba(255,255,255,.35);
+}
+.medal.m1{background:radial-gradient(circle at 35% 30%,#FFE9A0,var(--ouro) 55%,var(--ouro-esc));}
+.medal.m2{background:radial-gradient(circle at 35% 30%,#FFFFFF,var(--prata) 55%,var(--prata-esc));}
+.medal.m3{background:radial-gradient(circle at 35% 30%,#F6C9A0,var(--bronze) 55%,var(--bronze-esc));}
+.pos-num{
+  width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:800;color:var(--txt-s);background:rgba(255,255,255,.07);
+  border:1px solid var(--glass-brd);font-variant-numeric:tabular-nums;
+}
+.medal-tag{
+  font-size:9px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;
+  padding:3px 9px;border-radius:20px;margin-left:9px;vertical-align:middle;
+}
+.medal-tag.t1{background:var(--ouro);color:#5C4200;}
+.medal-tag.t2{background:var(--prata);color:#3A4256;}
+.medal-tag.t3{background:var(--bronze);color:#4A2606;}
+
+.rk-nome{flex:1;min-width:0;}
+.rk-nome .nm{font-size:17px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.rk-bar{height:6px;background:rgba(255,255,255,.10);border-radius:3px;overflow:hidden;margin-top:5px;}
+.rk-bar .bf{height:6px;border-radius:3px;background:linear-gradient(90deg,var(--roxo-cl),var(--lav));transition:width .8s ease;}
+.rk-row.medal-1 .bf{background:linear-gradient(90deg,var(--ouro-esc),var(--ouro));}
+.rk-row.medal-2 .bf{background:linear-gradient(90deg,var(--prata-esc),var(--prata));}
+.rk-row.medal-3 .bf{background:linear-gradient(90deg,var(--bronze-esc),var(--bronze));}
+.rk-qtd{width:95px;text-align:right;flex-shrink:0;}
+.rk-qtd .v{font-size:21px;font-weight:800;color:#fff;font-variant-numeric:tabular-nums;line-height:1;}
+.rk-qtd small{display:block;font-size:9px;font-weight:700;color:var(--txt-s);text-transform:uppercase;letter-spacing:.08em;margin-top:2px;}
+.rk-empty{padding:60px 20px;text-align:center;color:var(--txt-s);font-size:17px;}
+
+/* RECORD */
+.rk-record{
+  border-top:1px solid var(--glass-brd);padding:9px 22px;display:flex;align-items:center;gap:10px;
+  font-size:13px;font-weight:600;color:var(--txt-s);background:rgba(255,210,63,.06);flex-shrink:0;
+}
+.rk-record .trofeu{font-size:17px;line-height:1;}
+.rk-record .rec-lbl{font-weight:900;color:var(--ouro);letter-spacing:.1em;text-transform:uppercase;font-size:12px;}
+.rk-record strong{color:#fff;font-weight:800;font-variant-numeric:tabular-nums;}
+
+.toast{
+  position:fixed;bottom:22px;right:22px;background:#fff;color:var(--roxo-esc);
+  padding:13px 22px;border-radius:12px;font-size:14px;font-weight:700;
+  box-shadow:0 10px 40px rgba(0,0,0,.45);opacity:0;transition:opacity .25s;pointer-events:none;z-index:100;
+}
+.toast.show{opacity:1;}
+
+@media (prefers-reduced-motion: reduce){
+  .rk-row{animation:none;}
+  .live-dot{animation:none;}
+  .rank-body{scroll-behavior:auto;}
+}
+@media(max-width:1000px){
+  .rank-grid{grid-template-columns:1fr;}
+  .clock{font-size:36px;}
+  .tb-title h1{font-size:26px;}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- HEADER -->
+  <div class="topbar">
+    <div class="tb-l">
+      <div class="bear-badge">
+        <!-- Urso preto -->
+        <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-label="Urso Pangeia">
+          <g fill="#000">
+            <circle cx="17" cy="16" r="9"/>
+            <circle cx="47" cy="16" r="9"/>
+            <ellipse cx="32" cy="36" rx="22" ry="20"/>
+          </g>
+          <ellipse cx="32" cy="44" rx="10" ry="8" fill="#fff" opacity=".95"/>
+          <ellipse cx="32" cy="41" rx="4" ry="3" fill="#000"/>
+          <circle cx="24" cy="30" r="2.6" fill="#fff"/>
+          <circle cx="40" cy="30" r="2.6" fill="#fff"/>
+        </svg>
+      </div>
+      <div>
+        <div class="brand-name">PANGEIA</div>
+        <div class="brand-sub">Pangeia 96</div>
+      </div>
+    </div>
+    <div class="tb-title">
+      <h1>Produção <span>Acabamento</span></h1>
+    </div>
+    <div class="tb-r">
+      <div class="clock" id="clock">--:--:--</div>
+      <div class="clock-date" id="clockDate">—</div>
+    </div>
+  </div>
+
+  <!-- FILTRO PERÍODO -->
+  <div class="filtro">
+    <span class="ft-lbl">Período</span>
+    <div class="dg">
+      <label>De</label><input type="date" id="dtI" onchange="render()">
+      <span style="color:var(--txt-s);font-size:13px;">→</span>
+      <label>Até</label><input type="date" id="dtF" onchange="render()">
+    </div>
+    <span class="status"><span class="live-dot"></span><span id="status">—</span></span>
+  </div>
+
+  <!-- RANKINGS -->
+  <div class="rank-grid">
+    <div class="rank-card lin">
+      <div class="rank-hdr">
+        <div class="rk-title"><span class="rk-chip"></span>Linha / Acab</div>
+        <div class="rk-total">Total peças<strong id="totLin">—</strong></div>
+      </div>
+      <div class="rank-cols"><span class="c-pos">#</span><span class="c-nome">Colaboradora</span><span class="c-qtd">Qtd pçs</span></div>
+      <div class="rank-body" id="rankLin"><div class="rk-empty">Carregando…</div></div>
+      <div class="rk-record" id="recLin"><span class="trofeu">🏆</span><span class="rec-lbl">Record:</span><span>—</span></div>
+    </div>
+    <div class="rank-card rev">
+      <div class="rank-hdr">
+        <div class="rk-title"><span class="rk-chip"></span>Revisão</div>
+        <div class="rk-total">Total peças<strong id="totRev">—</strong></div>
+      </div>
+      <div class="rank-cols"><span class="c-pos">#</span><span class="c-nome">Colaboradora</span><span class="c-qtd">Qtd pçs</span></div>
+      <div class="rank-body" id="rankRev"><div class="rk-empty">Carregando…</div></div>
+      <div class="rk-record" id="recRev"><span class="trofeu">🏆</span><span class="rec-lbl">Record:</span><span>—</span></div>
+    </div>
+  </div>
+
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+var SCRIPT_URL="https://script.google.com/macros/s/AKfycbx3ApxHLtMoHFdm28uS0InVQ4pX8v67LoDYuS5u6brmqv1EaUDPLjjopeVKp8t_wB0/exec";
+var TIPOS_ACAB=['Linha / Embalagem','Trocas e Consertos'];
+var TIPO_REV='Revisão';
+var MEDAL_TAGS=['Ouro','Prata','Bronze'];
+var todos=[];
+
+/* ── util ── */
+function fd(d){return d.toISOString().split('T')[0];}
+function n(v){return Number(v).toLocaleString('pt-BR');}
+function toast(msg){
+  var t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  clearTimeout(t._h);t._h=setTimeout(function(){t.classList.remove('show');},3000);
+}
+
+/* ── relógio ── */
+var DIAS=['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'];
+var MESES=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+function tickClock(){
+  var d=new Date();
+  function p(x){return x<10?'0'+x:x;}
+  document.getElementById('clock').textContent=p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds());
+  document.getElementById('clockDate').textContent=DIAS[d.getDay()]+', '+d.getDate()+' de '+MESES[d.getMonth()]+' de '+d.getFullYear();
+}
+setInterval(tickClock,1000);tickClock();
+
+/* ── dados (mesma origem do index.html) ── */
+function processarRegistros(registros){
+  return registros.filter(function(r){return r&&r[0];}).map(function(r){
+    var dt=new Date(r[0]);
+    if(isNaN(dt.getTime()))return null;
+    return{
+      data:dt,ds:fd(dt),
+      col:(r[1]||'').toString().toUpperCase().trim(),
+      tipo:(r[2]||'').toString().trim(),
+      tot:Number(r[8])||0
+    };
+  }).filter(Boolean);
+}
+
+function carregarDados(forcar){
+  document.getElementById('status').textContent='Carregando…';
+  fetch(SCRIPT_URL+'?action=registros&t='+Date.now())
+    .then(function(r){return r.json();})
+    .then(function(data){
+      todos=processarRegistros(data.registros||[]);
+      render();
+      var d=new Date();
+      function p(x){return x<10?'0'+x:x;}
+      document.getElementById('status').textContent='Atualizado às '+p(d.getHours())+':'+p(d.getMinutes());
+      if(forcar)toast('✔ '+todos.length+' registros carregados');
+    })
+    .catch(function(){
+      document.getElementById('status').textContent='Erro ao carregar';
+      toast('⚠ Erro ao carregar dados. Tentando de novo no próximo ciclo.');
+    });
+}
+
+function filtrarPeriodo(){
+  var ini=document.getElementById('dtI').value;
+  var fim=document.getElementById('dtF').value;
+  var ti=ini?new Date(ini+'T00:00:00').getTime():null;
+  var tf=fim?new Date(fim+'T23:59:59').getTime():null;
+  return todos.filter(function(r){
+    var ts=r.data.getTime();
+    if(ti&&ts<ti)return false;
+    if(tf&&ts>tf)return false;
+    return true;
+  });
+}
+
+/* ── ranking ── */
+function agruparPorColab(regs){
+  var m={};
+  regs.forEach(function(r){
+    if(!r.col)return;
+    m[r.col]=(m[r.col]||0)+r.tot;
+  });
+  return Object.keys(m).map(function(c){return{col:c,tot:m[c]};})
+    .sort(function(a,b){return b.tot-a.tot;});
+}
+
+function renderRanking(elId,totId,lista){
+  var el=document.getElementById(elId);
+  var total=lista.reduce(function(s,x){return s+x.tot;},0);
+  document.getElementById(totId).textContent=n(total);
+  if(!lista.length){
+    el.innerHTML='<div class="rk-empty">Sem registros no período selecionado.</div>';
+    return;
+  }
+  var max=lista[0].tot||1;
+  el.innerHTML=lista.map(function(x,i){
+    var w=Math.max(2,Math.round(x.tot/max*100));
+    var rowCls=i<3?' medal-'+(i+1):'';
+    var pos=i<3
+      ?'<div class="medal m'+(i+1)+'">'+(i+1)+'</div>'
+      :'<div class="pos-num">'+(i+1)+'</div>';
+    var tag=i<3?'<span class="medal-tag t'+(i+1)+'">'+MEDAL_TAGS[i]+'</span>':'';
+    return '<div class="rk-row'+rowCls+'" style="animation-delay:'+(i*60)+'ms">'
+      +'<div class="rk-pos">'+pos+'</div>'
+      +'<div class="rk-nome"><div class="nm">'+x.col+tag+'</div>'
+      +'<div class="rk-bar"><div class="bf" style="width:'+w+'%"></div></div></div>'
+      +'<div class="rk-qtd"><span class="v">'+n(x.tot)+'</span><small>pçs</small></div>'
+      +'</div>';
+  }).join('');
+}
+
+/* Recorde histórico: maior produção de uma colaboradora em um único dia na categoria */
+function renderRecord(elId,regs){
+  var el=document.getElementById(elId);
+  var m={};
+  regs.forEach(function(r){
+    if(!r.col)return;
+    var k=r.col+'|'+r.ds;
+    m[k]=(m[k]||0)+r.tot;
+  });
+  var best=null;
+  Object.keys(m).forEach(function(k){
+    if(!best||m[k]>best.tot){
+      var p=k.split('|');
+      best={col:p[0],ds:p[1],tot:m[k]};
+    }
+  });
+  if(!best){
+    el.innerHTML='<span class="trofeu">🏆</span><span class="rec-lbl">Record:</span><span>—</span>';
+    return;
+  }
+  var p=best.ds.split('-');
+  var dia=p[2]+'/'+p[1];
+  el.innerHTML='<span class="trofeu">🏆</span><span class="rec-lbl">Record:</span>'
+    +'<span><strong>'+n(best.tot)+' pçs</strong> — por: <strong>'+best.col+'</strong> dia <strong>'+dia+'</strong></span>';
+}
+
+function render(){
+  var base=filtrarPeriodo();
+  var lin=base.filter(function(r){return TIPOS_ACAB.indexOf(r.tipo)>=0;});
+  var rev=base.filter(function(r){return r.tipo===TIPO_REV;});
+  renderRanking('rankLin','totLin',agruparPorColab(lin));
+  renderRanking('rankRev','totRev',agruparPorColab(rev));
+  // Record considera todo o histórico, independente do período filtrado
+  renderRecord('recLin',todos.filter(function(r){return TIPOS_ACAB.indexOf(r.tipo)>=0;}));
+  renderRecord('recRev',todos.filter(function(r){return r.tipo===TIPO_REV;}));
+}
+
+/* ── auto-scroll suave para listas longas (modo TV) ── */
+function autoScrollTV(){
+  ['rankLin','rankRev'].forEach(function(id){
+    var el=document.getElementById(id);
+    if(el.scrollHeight<=el.clientHeight+8){el.scrollTop=0;return;}
+    var maxScroll=el.scrollHeight-el.clientHeight;
+    if(el.scrollTop>=maxScroll-8)el.scrollTop=0;
+    else el.scrollTop=Math.min(maxScroll,el.scrollTop+el.clientHeight*0.8);
+  });
+}
+setInterval(autoScrollTV,9000);
+
+/* ── init ── */
+window.addEventListener('load',function(){
+  var h=new Date();
+  document.getElementById('dtI').value=fd(h);
+  document.getElementById('dtF').value=fd(h);
+  carregarDados(false);
+  // Auto-refresh a cada 10 minutos (modo TV)
+  setInterval(function(){carregarDados(false);},10*60*1000);
+  // Vira o dia à meia-noite: se o filtro estiver em um dia único (modo "hoje"), acompanha a data nova
+  setInterval(function(){
+    var hoje=fd(new Date());
+    var dtI=document.getElementById('dtI'),dtF=document.getElementById('dtF');
+    if(dtI.value===dtF.value&&dtF.value!==hoje){
+      dtI.value=hoje;dtF.value=hoje;
+      render();
+    }
+  },60*1000);
+});
+</script>
+</body>
+</html>
