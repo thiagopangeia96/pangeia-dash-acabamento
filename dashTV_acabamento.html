@@ -142,18 +142,29 @@ input[type=date]{
 .rk-record .rec-lbl{font-weight:900;color:var(--ouro);letter-spacing:.1em;text-transform:uppercase;font-size:12px;}
 .rk-record strong{color:#fff;font-weight:800;font-variant-numeric:tabular-nums;}
 
-/* ── PASSAGEM DO URSO (efeito de atualização) ── */
+/* ── URSO DA ATUALIZAÇÃO: fixo no centro, desaparece em 4s ── */
 .urso-run{
-  position:fixed;bottom:6px;left:0;z-index:200;pointer-events:none;display:none;
-  filter:drop-shadow(0 0 12px rgba(174,118,229,.55)) drop-shadow(0 2px 4px rgba(0,0,0,.4));
+  position:fixed;inset:0;z-index:200;pointer-events:none;display:none;
+  align-items:center;justify-content:center;opacity:0;
+  filter:drop-shadow(0 0 28px rgba(174,118,229,.6)) drop-shadow(0 6px 16px rgba(0,0,0,.45));
 }
-.urso-run.show{display:block;animation:atravessa 5s linear forwards;}
-.urso-run.show .urso-body{animation:trote .35s ease-in-out infinite alternate;transform-origin:50% 80%;}
-.urso-run .pata-a{animation:passo .35s ease-in-out infinite alternate;transform-origin:50% 0%;}
-.urso-run .pata-b{animation:passo .35s ease-in-out infinite alternate-reverse;transform-origin:50% 0%;}
-@keyframes atravessa{from{transform:translateX(-180px);}to{transform:translateX(calc(100vw + 180px));}}
-@keyframes trote{from{transform:translateY(0) rotate(-1.5deg);}to{transform:translateY(-5px) rotate(1.5deg);}}
-@keyframes passo{from{transform:rotate(-14deg);}to{transform:rotate(14deg);}}
+.urso-run.show{display:flex;animation:ursoFade 4s ease-in forwards;}
+.urso-run.show .urso-big{animation:ursoSome 4s ease-in forwards;}
+.urso-big{width:min(840px,80vh);height:min(840px,80vh);}
+.urso-big svg{width:66%;height:66%;display:block;}
+/* Saída estilo PowerPoint: "Diminuir e desvanecer" — encolhe, gira de leve e desfoca até sumir */
+@keyframes ursoFade{
+  0%{opacity:0;}
+  10%{opacity:1;}
+  35%{opacity:1;}
+  100%{opacity:0;}
+}
+@keyframes ursoSome{
+  0%{transform:scale(.85) rotate(0deg);filter:blur(0);}
+  10%{transform:scale(1) rotate(0deg);}
+  35%{transform:scale(1) rotate(0deg);filter:blur(0);}
+  100%{transform:scale(.05) rotate(-12deg);filter:blur(14px);}
+}
 @media (prefers-reduced-motion: reduce){.urso-run.show{display:none;}}
 
 .toast{
@@ -244,33 +255,21 @@ input[type=date]{
 
 </div>
 
-<!-- Urso que atravessa a tela na atualização -->
+<!-- Urso da atualização: mesmo ícone do cabeçalho, ampliado no centro, some em 4s -->
 <div class="urso-run" id="ursoRun">
-  <svg class="urso-body" width="150" height="86" viewBox="0 0 150 86" xmlns="http://www.w3.org/2000/svg">
-    <g fill="#000">
-      <!-- corpo -->
-      <ellipse cx="66" cy="44" rx="42" ry="25"/>
-      <!-- cabeça -->
-      <circle cx="116" cy="30" r="17"/>
-      <!-- orelha -->
-      <circle cx="124" cy="16" r="6.5"/>
-      <!-- focinho -->
-      <ellipse cx="131" cy="35" rx="8" ry="5.5"/>
-      <!-- rabinho -->
-      <circle cx="24" cy="36" r="6"/>
-      <!-- patas -->
-      <g class="pata-a">
-        <rect x="38" y="58" width="11" height="24" rx="5"/>
-        <rect x="96" y="58" width="11" height="24" rx="5"/>
+  <div class="bear-badge urso-big">
+    <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+      <g fill="#000">
+        <circle cx="17" cy="16" r="9"/>
+        <circle cx="47" cy="16" r="9"/>
+        <ellipse cx="32" cy="36" rx="22" ry="20"/>
       </g>
-      <g class="pata-b">
-        <rect x="56" y="58" width="11" height="24" rx="5"/>
-        <rect x="78" y="58" width="11" height="24" rx="5"/>
-      </g>
-    </g>
-    <!-- olho -->
-    <circle cx="119" cy="27" r="2.4" fill="#fff"/>
-  </svg>
+      <ellipse cx="32" cy="44" rx="10" ry="8" fill="#fff" opacity=".95"/>
+      <ellipse cx="32" cy="41" rx="4" ry="3" fill="#000"/>
+      <circle cx="24" cy="30" r="2.6" fill="#fff"/>
+      <circle cx="40" cy="30" r="2.6" fill="#fff"/>
+    </svg>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -308,7 +307,7 @@ function passagemUrso(){
   u.classList.remove('show');
   void u.offsetWidth; // reinicia a animação
   u.classList.add('show');
-  clearTimeout(u._h);u._h=setTimeout(function(){u.classList.remove('show');},5200);
+  clearTimeout(u._h);u._h=setTimeout(function(){u.classList.remove('show');},4200);
 }
 
 /* ── dados (mesma origem do index.html) ── */
@@ -332,7 +331,6 @@ function carregarDados(forcar){
     .then(function(data){
       todos=processarRegistros(data.registros||[]);
       render();
-      passagemUrso();
       var d=new Date();
       function p(x){return x<10?'0'+x:x;}
       document.getElementById('status').textContent='Atualizado às '+p(d.getHours())+':'+p(d.getMinutes());
@@ -428,6 +426,7 @@ function render(){
   // Record considera todo o histórico, independente do período filtrado
   renderRecord('recLin',todos.filter(function(r){return TIPOS_ACAB.indexOf(r.tipo)>=0;}));
   renderRecord('recRev',todos.filter(function(r){return r.tipo===TIPO_REV;}));
+  passagemUrso(); // efeito do urso em toda atualização da tela
 }
 
 /* ── auto-scroll suave para listas longas (modo TV) ── */
