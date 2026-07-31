@@ -142,6 +142,20 @@ input[type=date]{
 .rk-record .rec-lbl{font-weight:900;color:var(--ouro);letter-spacing:.1em;text-transform:uppercase;font-size:12px;}
 .rk-record strong{color:#fff;font-weight:800;font-variant-numeric:tabular-nums;}
 
+/* ── PASSAGEM DO URSO (efeito de atualização) ── */
+.urso-run{
+  position:fixed;bottom:6px;left:0;z-index:200;pointer-events:none;display:none;
+  filter:drop-shadow(0 0 12px rgba(174,118,229,.55)) drop-shadow(0 2px 4px rgba(0,0,0,.4));
+}
+.urso-run.show{display:block;animation:atravessa 5s linear forwards;}
+.urso-run.show .urso-body{animation:trote .35s ease-in-out infinite alternate;transform-origin:50% 80%;}
+.urso-run .pata-a{animation:passo .35s ease-in-out infinite alternate;transform-origin:50% 0%;}
+.urso-run .pata-b{animation:passo .35s ease-in-out infinite alternate-reverse;transform-origin:50% 0%;}
+@keyframes atravessa{from{transform:translateX(-180px);}to{transform:translateX(calc(100vw + 180px));}}
+@keyframes trote{from{transform:translateY(0) rotate(-1.5deg);}to{transform:translateY(-5px) rotate(1.5deg);}}
+@keyframes passo{from{transform:rotate(-14deg);}to{transform:rotate(14deg);}}
+@media (prefers-reduced-motion: reduce){.urso-run.show{display:none;}}
+
 .toast{
   position:fixed;bottom:22px;right:22px;background:#fff;color:var(--roxo-esc);
   padding:13px 22px;border-radius:12px;font-size:14px;font-weight:700;
@@ -229,6 +243,36 @@ input[type=date]{
   </div>
 
 </div>
+
+<!-- Urso que atravessa a tela na atualização -->
+<div class="urso-run" id="ursoRun">
+  <svg class="urso-body" width="150" height="86" viewBox="0 0 150 86" xmlns="http://www.w3.org/2000/svg">
+    <g fill="#000">
+      <!-- corpo -->
+      <ellipse cx="66" cy="44" rx="42" ry="25"/>
+      <!-- cabeça -->
+      <circle cx="116" cy="30" r="17"/>
+      <!-- orelha -->
+      <circle cx="124" cy="16" r="6.5"/>
+      <!-- focinho -->
+      <ellipse cx="131" cy="35" rx="8" ry="5.5"/>
+      <!-- rabinho -->
+      <circle cx="24" cy="36" r="6"/>
+      <!-- patas -->
+      <g class="pata-a">
+        <rect x="38" y="58" width="11" height="24" rx="5"/>
+        <rect x="96" y="58" width="11" height="24" rx="5"/>
+      </g>
+      <g class="pata-b">
+        <rect x="56" y="58" width="11" height="24" rx="5"/>
+        <rect x="78" y="58" width="11" height="24" rx="5"/>
+      </g>
+    </g>
+    <!-- olho -->
+    <circle cx="119" cy="27" r="2.4" fill="#fff"/>
+  </svg>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -258,6 +302,15 @@ function tickClock(){
 }
 setInterval(tickClock,1000);tickClock();
 
+/* ── passagem do urso na atualização ── */
+function passagemUrso(){
+  var u=document.getElementById('ursoRun');
+  u.classList.remove('show');
+  void u.offsetWidth; // reinicia a animação
+  u.classList.add('show');
+  clearTimeout(u._h);u._h=setTimeout(function(){u.classList.remove('show');},5200);
+}
+
 /* ── dados (mesma origem do index.html) ── */
 function processarRegistros(registros){
   return registros.filter(function(r){return r&&r[0];}).map(function(r){
@@ -279,6 +332,7 @@ function carregarDados(forcar){
     .then(function(data){
       todos=processarRegistros(data.registros||[]);
       render();
+      passagemUrso();
       var d=new Date();
       function p(x){return x<10?'0'+x:x;}
       document.getElementById('status').textContent='Atualizado às '+p(d.getHours())+':'+p(d.getMinutes());
@@ -394,8 +448,8 @@ window.addEventListener('load',function(){
   document.getElementById('dtI').value=fd(h);
   document.getElementById('dtF').value=fd(h);
   carregarDados(false);
-  // Auto-refresh a cada 10 minutos (modo TV)
-  setInterval(function(){carregarDados(false);},10*60*1000);
+  // Auto-refresh a cada 5 minutos (modo TV)
+  setInterval(function(){carregarDados(false);},5*60*1000);
   // Vira o dia à meia-noite: se o filtro estiver em um dia único (modo "hoje"), acompanha a data nova
   setInterval(function(){
     var hoje=fd(new Date());
