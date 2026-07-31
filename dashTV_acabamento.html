@@ -149,8 +149,11 @@ input[type=date]{
   filter:drop-shadow(0 0 40px rgba(174,118,229,.5));
 }
 .urso-run.show{display:flex;animation:ursoFade 4s ease-in forwards;}
-.urso-run.show .urso-big{animation:ursoSome 4s ease-in forwards;}
-.urso-big{width:min(840px,80vh);height:auto;display:block;}
+.urso-run.show .patas{animation:ursoSome 4s ease-in forwards;}
+.patas{display:flex;align-items:center;justify-content:center;gap:min(60px,5vw);}
+.urso-big{width:min(520px,52vh);height:auto;display:block;}
+.pata-esq{transform:rotate(-14deg) translateY(28px);}
+.pata-dir{transform:rotate(14deg) scaleX(-1) translateY(-28px);}
 /* Saída estilo PowerPoint: "Diminuir e desvanecer" — encolhe, gira de leve e desfoca até sumir */
 @keyframes ursoFade{
   0%{opacity:0;}
@@ -254,9 +257,12 @@ input[type=date]{
 
 </div>
 
-<!-- Pegada do urso na atualização: ampliada no centro, some em 4s -->
+<!-- Pegadas do urso na atualização: par ampliado no centro, some em 4s -->
 <div class="urso-run" id="ursoRun">
-  <img class="urso-big" src="imagem_pegada_urso.png" alt="">
+  <div class="patas">
+    <img class="urso-big pata-esq" src="imagem_pegada_urso.png" alt="">
+    <img class="urso-big pata-dir" src="imagem_pegada_urso.png" alt="">
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
