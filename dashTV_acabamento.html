@@ -146,12 +146,11 @@ input[type=date]{
 .urso-run{
   position:fixed;inset:0;z-index:200;pointer-events:none;display:none;
   align-items:center;justify-content:center;opacity:0;
-  filter:drop-shadow(0 0 28px rgba(174,118,229,.6)) drop-shadow(0 6px 16px rgba(0,0,0,.45));
+  filter:drop-shadow(0 0 40px rgba(174,118,229,.5));
 }
 .urso-run.show{display:flex;animation:ursoFade 4s ease-in forwards;}
 .urso-run.show .urso-big{animation:ursoSome 4s ease-in forwards;}
-.urso-big{width:min(840px,80vh);height:min(840px,80vh);}
-.urso-big svg{width:66%;height:66%;display:block;}
+.urso-big{width:min(840px,80vh);height:auto;display:block;}
 /* Saída estilo PowerPoint: "Diminuir e desvanecer" — encolhe, gira de leve e desfoca até sumir */
 @keyframes ursoFade{
   0%{opacity:0;}
@@ -255,21 +254,9 @@ input[type=date]{
 
 </div>
 
-<!-- Urso da atualização: mesmo ícone do cabeçalho, ampliado no centro, some em 4s -->
+<!-- Pegada do urso na atualização: ampliada no centro, some em 4s -->
 <div class="urso-run" id="ursoRun">
-  <div class="bear-badge urso-big">
-    <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-      <g fill="#000">
-        <circle cx="17" cy="16" r="9"/>
-        <circle cx="47" cy="16" r="9"/>
-        <ellipse cx="32" cy="36" rx="22" ry="20"/>
-      </g>
-      <ellipse cx="32" cy="44" rx="10" ry="8" fill="#fff" opacity=".95"/>
-      <ellipse cx="32" cy="41" rx="4" ry="3" fill="#000"/>
-      <circle cx="24" cy="30" r="2.6" fill="#fff"/>
-      <circle cx="40" cy="30" r="2.6" fill="#fff"/>
-    </svg>
-  </div>
+  <img class="urso-big" src="imagem_pegada_urso.png" alt="">
 </div>
 
 <div class="toast" id="toast"></div>
