@@ -273,6 +273,7 @@ var TIPOS_ACAB=['Linha / Embalagem','Trocas e Consertos'];
 var TIPO_REV='Revisão';
 var MEDAL_TAGS=['Ouro','Prata','Bronze'];
 var todos=[];
+var _scrollDir={rankLin:1,rankRev:1}; // sentido do auto-scroll de cada ranking
 
 /* ── util ── */
 function fd(d){return d.toISOString().split('T')[0];}
@@ -361,6 +362,7 @@ function agruparPorColab(regs){
 
 function renderRanking(elId,totId,lista){
   var el=document.getElementById(elId);
+  if(_scrollDir[elId]!==undefined)_scrollDir[elId]=1; // lista redesenhada volta ao topo, descendo
   var total=lista.reduce(function(s,x){return s+x.tot;},0);
   document.getElementById(totId).textContent=n(total);
   if(!lista.length){
@@ -422,17 +424,22 @@ function render(){
   passagemUrso(); // efeito do urso em toda atualização da tela
 }
 
-/* ── auto-scroll suave para listas longas (modo TV) ── */
+/* ── auto-scroll suave: desce e sobe o ranking a cada 5s (modo TV) ── */
 function autoScrollTV(){
   ['rankLin','rankRev'].forEach(function(id){
     var el=document.getElementById(id);
-    if(el.scrollHeight<=el.clientHeight+8){el.scrollTop=0;return;}
+    if(!el)return;
+    // Lista curta: nada a rolar
+    if(el.scrollHeight<=el.clientHeight+8){el.scrollTop=0;_scrollDir[id]=1;return;}
     var maxScroll=el.scrollHeight-el.clientHeight;
-    if(el.scrollTop>=maxScroll-8)el.scrollTop=0;
-    else el.scrollTop=Math.min(maxScroll,el.scrollTop+el.clientHeight*0.8);
+    // Inverte o sentido nas extremidades (desce até o fim, depois sobe até o topo)
+    if(_scrollDir[id]>0&&el.scrollTop>=maxScroll-8)_scrollDir[id]=-1;
+    else if(_scrollDir[id]<0&&el.scrollTop<=8)_scrollDir[id]=1;
+    var passo=el.clientHeight*0.8*_scrollDir[id];
+    el.scrollTop=Math.max(0,Math.min(maxScroll,el.scrollTop+passo));
   });
 }
-setInterval(autoScrollTV,9000);
+setInterval(autoScrollTV,5000);
 
 /* ── init ── */
 window.addEventListener('load',function(){
