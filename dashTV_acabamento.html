@@ -308,6 +308,13 @@ function passagemUrso(){
   clearTimeout(u._h);u._h=setTimeout(function(){u.classList.remove('show');},4200);
 }
 
+/* Gancho para o painel rotativo (dashTV_rotativo.html): quando esta tela volta a
+   aparecer no ciclo, ele manda a mensagem e as pegadas passam de novo.
+   postMessage funciona mesmo entre iframes de origens diferentes (ex.: file://). */
+window.addEventListener('message',function(e){
+  if(e.data==='pangeia:urso')passagemUrso();
+});
+
 /* ── dados (mesma origem do index.html) ── */
 function processarRegistros(registros){
   return registros.filter(function(r){return r&&r[0];}).map(function(r){

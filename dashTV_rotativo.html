@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pangeia · TV Acabamento — Produção + Prioridade</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;overflow:hidden;background:#1E0F3D;}
+
+/* As duas telas ficam SEMPRE carregadas, empilhadas. A troca é só de opacidade:
+   nada de recarregar iframe a cada ciclo (recarregar faria refetch da planilha a
+   cada passagem e zeraria o auto-scroll do ranking do dashTV). */
+.tela{
+  position:fixed;top:0;left:0;width:100%;height:100%;border:0;
+  opacity:0;pointer-events:none;transition:opacity .6s ease;z-index:1;
+}
+.tela.ativo{opacity:1;pointer-events:auto;z-index:2;}
+
+/* Barra de progresso do ciclo, colada no rodapé. */
+.ciclo{position:fixed;left:0;right:0;bottom:0;height:4px;background:rgba(255,255,255,.14);z-index:10;}
+.ciclo-fill{height:100%;width:0;background:linear-gradient(90deg,#AE76E5,#FFD23F);}
+.ciclo-fill.rodando{animation:progresso var(--dur,10s) linear forwards;}
+@keyframes progresso{from{width:0;}to{width:100%;}}
+
+/* Botão de pausa (também pela barra de espaço). */
+.btn-pausa{
+  position:fixed;bottom:16px;right:16px;z-index:11;cursor:pointer;
+  background:rgba(30,15,61,.88);color:#fff;border:1px solid rgba(255,255,255,.22);
+  padding:9px 16px;border-radius:22px;font:800 12px -apple-system,'Segoe UI',sans-serif;
+  letter-spacing:.06em;text-transform:uppercase;
+  box-shadow:0 6px 18px rgba(0,0,0,.35);opacity:.55;transition:opacity .2s,transform .15s;
+}
+.btn-pausa:hover{opacity:1;transform:translateY(-1px);}
+/* Pausado: fica em evidência para ninguém achar que a TV travou. */
+.btn-pausa.pausado{background:#FFD23F;color:#3D1B6B;border-color:#FFD23F;opacity:1;}
+
+@media (prefers-reduced-motion: reduce){
+  .tela{transition:none;}
+  .ciclo-fill.rodando{animation:none;width:100%;}
+}
+</style>
+</head>
+<body>
+
+<!-- Ordem = ordem do ciclo. O src sai de data-src com ?v=<hora do boot> para a TV
+     nunca subir com versão em cache das páginas depois de uma atualização. -->
+<iframe class="tela ativo" id="tela0" data-src="dashTV_acabamento.html" title="Produção Acabamento"></iframe>
+<iframe class="tela" id="tela1" data-src="prioridade_acabamento.html" title="Prioridade Acabamento"></iframe>
+
+<div class="ciclo"><div class="ciclo-fill" id="cicloFill"></div></div>
+<button class="btn-pausa" id="btnPausa" onclick="alternarPausa()"
+        title="Pausar/retomar o ciclo (ou barra de espaço)">⏸ Pausar</button>
+
+<script>
+/* Tempo de cada tela, na ordem do ciclo. A barra de progresso segue o tempo da
+   tela que estiver no ar. */
+var DURACOES=[20000,15000];  // 0 = Produtividade (20s) · 1 = Prioridade (15s)
+var FADE_MS=600;             // igual à transição de opacidade do .tela no CSS
+var telas=[document.getElementById('tela0'),document.getElementById('tela1')];
+var fill=document.getElementById('cicloFill');
+var atual=0, timer=null, pausado=false;
+
+// Carrega as duas telas já sem cache (uma vez só, no boot do painel).
+var _v=Date.now();
+telas.forEach(function(t){t.src=t.getAttribute('data-src')+'?v='+_v;});
+
+function mostrar(i){
+  atual=(i+telas.length)%telas.length;
+  telas.forEach(function(t,k){t.classList.toggle('ativo',k===atual);});
+  // Produtividade voltando ao ar: repete o efeito das pegadas de urso. Espera o
+  // fade terminar — animação disparada com o iframe ainda invisível fica
+  // throttled pelo Chrome e a passagem do urso passaria batida.
+  if(atual===0)setTimeout(avisarUrso,FADE_MS+50);
+  reiniciarBarra();
+  agendar();
+}
+
+/* Dispara as pegadas no dashTV a cada passagem. Chamada direta quando a origem
+   permite; senão postMessage (o dashTV escuta 'message'), que funciona também
+   com as páginas abertas via file://. */
+function avisarUrso(){
+  try{
+    var w=telas[0].contentWindow;
+    if(w&&typeof w.passagemUrso==='function'){w.passagemUrso();return;}
+  }catch(e){/* origem opaca: cai no postMessage */}
+  try{
+    telas[0].contentWindow.postMessage('pangeia:urso','*');
+  }catch(e){/* iframe ainda carregando: o proprio dashTV ja anima ao renderizar */}
+}
+
+/* Reinicia a animação da barra com a duração da tela atual. */
+function reiniciarBarra(){
+  document.documentElement.style.setProperty('--dur',(DURACOES[atual]/1000)+'s');
+  fill.classList.remove('rodando');
+  fill.style.width='';
+  void fill.offsetWidth;
+  if(!pausado)fill.classList.add('rodando');
+}
+
+/* setTimeout (não setInterval) porque cada tela tem seu próprio tempo. */
+function agendar(){
+  clearTimeout(timer);
+  if(pausado)return;
+  timer=setTimeout(function(){mostrar(atual+1);},DURACOES[atual]);
+}
+
+function iniciar(){
+  reiniciarBarra();
+  agendar();
+}
+
+function alternarPausa(){
+  pausado=!pausado;
+  var btn=document.getElementById('btnPausa');
+  btn.classList.toggle('pausado',pausado);
+  btn.textContent=pausado?'▶ Retomar':'⏸ Pausar';
+  btn.blur();   // solta o foco: senão a barra de espaço vira "clique" no botão
+  if(pausado){
+    clearTimeout(timer);
+    // Congela a barra onde estiver.
+    var w=fill.getBoundingClientRect().width;
+    fill.classList.remove('rodando');
+    fill.style.width=w+'px';
+  } else {
+    iniciar();   // retoma contando o tempo cheio da tela atual
+  }
+}
+
+/* Espaço pausa/retoma; setas trocam de tela na hora (útil na TV). */
+document.addEventListener('keydown',function(e){
+  if(e.code==='Space'){e.preventDefault();alternarPausa();return;}
+  if(e.key==='ArrowRight')mostrar(atual+1);
+  if(e.key==='ArrowLeft')mostrar(atual-1);
+});
+
+iniciar();
+</script>
+</body>
+</html>
