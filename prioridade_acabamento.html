@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pangeia · Prioridade — Acabamento</title>
+<style>
+:root{
+  --roxo:#592C95;--roxo-esc:#3D1B6B;--roxo-cl:#AE76E5;
+  --lav:#E4D4F9;--lav-l:#F5EEFB;--amarelo:#FFD23F;
+  --txt:#2A1655;--txt-s:#6B5B8E;--brd:#D9C7F0;
+  --verm:#A32D2D;--verm-cl:#E24B4A;--verm-bg:#FDEDED;
+  --amb:#854F0B;--amb-cl:#EF9F27;--amb-bg:#FDF6E9;
+  --verd:#0F6E56;--verd-cl:#1D9E75;--verd-bg:#EAF7F2;
+  /* Header espelhado do dashTV: vidro escuro sobre o roxo profundo. */
+  --roxo-prof:#1E0F3D;--glass-brd:rgba(255,255,255,.14);--hdr-s:#CBB8EC;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,'Segoe UI',sans-serif;background:linear-gradient(135deg,#F5EEFB,#fff);color:var(--txt);min-height:100vh;padding:0 20px 20px;font-size:14px;}
+.wrap{max-width:1400px;margin:0 auto;}
+
+/* ── TOPBAR (mesma do dashTV_acabamento; só o título muda) ── */
+.topbar{
+  /* Opaco de propósito: o header fica congelado no topo e os cards passam por baixo. */
+  background:linear-gradient(135deg,#2A1655,#3D1B6B);
+  border:1px solid var(--glass-brd);backdrop-filter:blur(12px);
+  border-radius:0 0 16px 16px;padding:9px 24px;margin-bottom:16px;
+  display:flex;justify-content:space-between;align-items:center;gap:20px;
+  position:sticky;top:0;z-index:60;overflow:hidden;
+  box-shadow:0 8px 28px rgba(30,15,61,.35);
+}
+.topbar::before{content:'';position:absolute;right:-60px;top:-60px;width:240px;height:240px;background:var(--roxo-cl);opacity:.12;border-radius:50%;}
+.tb-l{display:flex;align-items:center;gap:16px;position:relative;z-index:1;}
+.bear-badge{
+  width:44px;height:44px;border-radius:50%;background:#fff;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  box-shadow:0 0 0 2px rgba(255,255,255,.15),0 4px 12px rgba(0,0,0,.35);
+}
+.bear-badge svg{width:29px;height:29px;display:block;}
+.brand-name{font-size:21px;font-weight:900;color:#fff;letter-spacing:3px;line-height:1;}
+.brand-sub{font-size:10px;font-weight:700;color:var(--hdr-s);letter-spacing:2px;text-transform:uppercase;margin-top:3px;}
+.tb-title{position:relative;z-index:1;text-align:center;flex:1;min-width:260px;}
+.tb-title h1{font-size:27px;font-weight:800;color:#fff;line-height:1.1;letter-spacing:.01em;}
+.tb-title h1 span{color:var(--roxo-cl);}
+.tb-r{position:relative;z-index:1;text-align:right;}
+.clock{font-size:38px;font-weight:800;color:#fff;font-variant-numeric:tabular-nums;line-height:1;letter-spacing:1px;text-shadow:0 0 20px rgba(174,118,229,.45);}
+.clock-date{font-size:12px;color:var(--hdr-s);font-weight:600;margin-top:4px;text-transform:capitalize;}
+.ubtn{background:var(--amarelo);color:var(--roxo-esc);border:none;padding:7px 16px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;}
+.sync-info{text-align:right;color:var(--txt-s);font-size:10px;font-weight:600;line-height:1.5;white-space:nowrap;}
+.sync-info strong{font-size:11px;color:var(--txt);}
+
+/* ── BARRA DE RESUMO ── */
+/* Linha única: nada de wrap — os itens não encolhem e não quebram o texto. */
+.resumo{background:#fff;border:1px solid var(--brd);border-radius:12px;padding:10px 18px;margin-bottom:14px;display:flex;align-items:center;gap:16px;flex-wrap:nowrap;overflow-x:auto;box-shadow:0 2px 8px rgba(89,44,149,.06);}
+.rs-dir{display:flex;align-items:center;gap:12px;margin-left:auto;flex-shrink:0;}
+.resumo .rs,.resumo .chip{flex-shrink:0;white-space:nowrap;}
+.rs{display:flex;align-items:baseline;gap:7px;}
+.rs-v{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1;}
+.rs-l{font-size:10px;font-weight:700;color:var(--txt-s);text-transform:uppercase;letter-spacing:.08em;}
+.rs-sep{width:1px;height:26px;background:var(--brd);}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;font-size:11px;font-weight:800;cursor:pointer;border:1px solid transparent;user-select:none;}
+.chip .bola{width:9px;height:9px;border-radius:50%;}
+.chip.v{background:var(--verm-bg);color:var(--verm);border-color:rgba(163,45,45,.25);}
+.chip.v .bola{background:var(--verm-cl);}
+.chip.a{background:var(--amb-bg);color:var(--amb);border-color:rgba(133,79,11,.25);}
+.chip.a .bola{background:var(--amb-cl);}
+.chip.g{background:var(--verd-bg);color:var(--verd);border-color:rgba(15,110,86,.25);}
+.chip.g .bola{background:var(--verd-cl);}
+.chip.off{opacity:.35;}
+
+/* ── CARDS ── */
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(272px,1fr));gap:12px;}
+/* Coluna flex: com .c-bot em margin-top:auto o rodapé fica colado embaixo, então
+   cards que esticam (linha com descrição de 2 linhas) mantêm o mesmo respiro. */
+.card{background:#fff;border:1px solid var(--brd);border-left:5px solid var(--roxo-cl);border-radius:12px;padding:12px 16px 11px;position:relative;display:flex;flex-direction:column;box-shadow:0 2px 8px rgba(89,44,149,.06);transition:transform .15s,box-shadow .15s;}
+.card:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(89,44,149,.14);}
+/* Urgente: fundo vermelho com 70% de transparência (alpha .30). */
+.card.v{border-left-color:var(--verm-cl);background:rgba(226,75,74,.30);border-color:rgba(163,45,45,.35);}
+.card.v .c-bot{border-top-color:rgba(163,45,45,.35);}
+/* Prioridade 2: fundo amarelo com 80% de transparência (alpha .20). */
+.card.a{border-left-color:var(--amb-cl);background:rgba(239,159,39,.20);border-color:rgba(133,79,11,.30);}
+.card.a .c-bot{border-top-color:rgba(133,79,11,.30);}
+/* Sem prioridade: verde no mesmo tom de transparência das prioridade 2. */
+.card.g{border-left-color:var(--verd-cl);background:rgba(29,158,117,.20);border-color:rgba(15,110,86,.30);}
+.card.g .c-bot{border-top-color:rgba(15,110,86,.30);}
+.c-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px;}
+.c-op{font-size:19px;font-weight:800;letter-spacing:.01em;font-variant-numeric:tabular-nums;}
+.c-op small{font-size:11px;font-weight:700;color:var(--txt-s);text-transform:uppercase;letter-spacing:.1em;margin-right:5px;}
+.c-tag{font-size:9px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;padding:4px 9px;border-radius:20px;white-space:nowrap;}
+.c-tag.v{background:var(--verm-cl);color:#fff;}
+.c-tag.a{background:var(--amb-cl);color:#4A2606;}
+.c-tag.g{background:var(--verd-cl);color:#fff;}
+/* Sem min-height: a 2ª linha era reservada mesmo em descrição curta e criava um
+   vão morto acima do tracejado. */
+.c-desc{font-size:23.4px;font-weight:700;color:var(--roxo);line-height:1.2;margin-bottom:10px;}
+.c-bot{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;border-top:1px dashed var(--brd);padding-top:10px;margin-top:auto;}
+.c-atr{display:flex;gap:20px;}
+.c-atr div{min-width:0;}
+/* Cor/Tam em 1,2x (rótulo 9→10.8px, valor 13→15.6px). */
+.c-atr .l{font-size:10.8px;font-weight:700;color:var(--txt-s);text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:2px;}
+.c-atr .v{font-size:15.6px;font-weight:700;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:132px;display:block;line-height:1.15;}
+.c-qtd{text-align:right;flex-shrink:0;}
+.c-qtd .n{font-size:22px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums;}
+.c-qtd .u{font-size:9px;font-weight:700;color:var(--txt-s);text-transform:uppercase;letter-spacing:.08em;}
+.card.v .c-qtd .n{color:var(--verm);}
+.card.a .c-qtd .n{color:var(--amb);}
+.card.g .c-qtd .n{color:var(--verd);}
+.c-rank{position:absolute;top:-7px;left:-7px;width:24px;height:24px;border-radius:50%;background:var(--roxo);color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.25);font-variant-numeric:tabular-nums;}
+.card.v .c-rank{background:var(--verm);}
+.card.a .c-rank{background:var(--amb);}
+.card.g .c-rank{background:var(--verd);}
+
+.msg{background:#fff;border:1px solid var(--brd);border-radius:12px;padding:48px 24px;text-align:center;color:var(--txt-s);font-size:15px;}
+.toast{position:fixed;bottom:20px;right:20px;background:var(--roxo-esc);color:#fff;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;box-shadow:0 10px 34px rgba(0,0,0,.35);opacity:0;transition:opacity .25s;pointer-events:none;z-index:100;}
+.toast.show{opacity:1;}
+
+@media (prefers-reduced-motion: reduce){.card:hover{transform:none;}}
+@media(max-width:900px){
+  .tb-title{min-width:0;}
+  .tb-title h1{font-size:20px;}
+  .clock{font-size:28px;}
+}
+@media(max-width:700px){
+  body{padding:0 12px 12px;}
+  .topbar{padding:8px 14px;gap:10px;}
+  .bear-badge{width:34px;height:34px;}
+  .bear-badge svg{width:22px;height:22px;}
+  .brand-name{font-size:16px;letter-spacing:2px;}
+  .brand-sub{display:none;}
+  .tb-title h1{font-size:17px;}
+  .clock{font-size:22px;}
+  .clock-date{display:none;}
+  .cards{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- HEADER (igual ao dashTV_acabamento, congelado no topo) -->
+  <div class="topbar">
+    <div class="tb-l">
+      <div class="bear-badge">
+        <!-- Urso preto -->
+        <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-label="Urso Pangeia">
+          <g fill="#000">
+            <circle cx="17" cy="16" r="9"/>
+            <circle cx="47" cy="16" r="9"/>
+            <ellipse cx="32" cy="36" rx="22" ry="20"/>
+          </g>
+          <ellipse cx="32" cy="44" rx="10" ry="8" fill="#fff" opacity=".95"/>
+          <ellipse cx="32" cy="41" rx="4" ry="3" fill="#000"/>
+          <circle cx="24" cy="30" r="2.6" fill="#fff"/>
+          <circle cx="40" cy="30" r="2.6" fill="#fff"/>
+        </svg>
+      </div>
+      <div>
+        <div class="brand-name">PANGEIA</div>
+        <div class="brand-sub">Pangeia 96</div>
+      </div>
+    </div>
+    <div class="tb-title">
+      <h1>Prioridade <span>Acabamento</span></h1>
+    </div>
+    <div class="tb-r">
+      <div class="clock" id="clock">--:--:--</div>
+      <div class="clock-date" id="clockDate">—</div>
+    </div>
+  </div>
+
+  <!-- RESUMO + FILTRO POR NÍVEL -->
+  <div class="resumo" id="resumo">
+    <div class="rs"><span class="rs-v" id="rsOps" style="color:var(--roxo)">—</span><span class="rs-l">OPs</span></div>
+    <div class="rs-sep"></div>
+    <div class="rs"><span class="rs-v" id="rsPcs" style="color:var(--roxo)">—</span><span class="rs-l">peças</span></div>
+    <div class="rs-sep"></div>
+    <span class="chip v" id="chipV" onclick="alternarNivel('vermelho')"><span class="bola"></span><span id="chipVTxt">— urgente</span></span>
+    <span class="chip a" id="chipA" onclick="alternarNivel('amarelo')"><span class="bola"></span><span id="chipATxt">— prioridade 2</span></span>
+    <span class="chip g" id="chipG" onclick="alternarNivel('verde')"><span class="bola"></span><span id="chipGTxt">— sem prioridade</span></span>
+    <!-- info + botão andam juntos: se a barra quebrar, quebram como um bloco -->
+    <div class="rs-dir">
+      <div class="sync-info"><strong id="infoSync">—</strong></div>
+      <button class="ubtn" onclick="carregar(true)">↺ Atualizar</button>
+    </div>
+  </div>
+
+  <div class="cards" id="cards"></div>
+  <div class="msg" id="msg">Carregando prioridades…</div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* Fonte: aba "Prioridade_Acabamento" da Planilha de acompanhamento de produção
+   (a mesma planilha de back-end do projeto). A aba é escrita pelo botão
+   "Marcar Prioridade" do Mapa de Produção (projeto Producao_Gestao).
+   Leitura via gviz em modo JSONP: a planilha responde application/javascript,
+   então não depende de CORS nem do Apps Script. */
+var SHEET_ID='1yrJkCYUyIdvdbkhgNnERoyL55bq5cfPcIYNwJqMmdOA';
+var ABA='Prioridade_Acabamento';
+var REFRESH_MS=5*60*1000;
+
+var todos=[];                    // linhas da aba, já ordenadas
+var nivelFiltro=null;            // 'vermelho' | 'amarelo' | 'verde' | null (todos)
+var _cbSeq=0;
+
+/* Níveis: ordem na fila, classe CSS do card/chip e rótulo da tarja. */
+var NIVEL_ORDEM={vermelho:0,amarelo:1,verde:2};
+var NIVEL_CLS={vermelho:'v',amarelo:'a',verde:'g'};
+var NIVEL_TAG={vermelho:'Urgente',amarelo:'Prioridade 2',verde:'Sem prioridade'};
+
+/* ── util ── */
+function n(v){return Number(v||0).toLocaleString('pt-BR');}
+function txt(v){
+  var s=(v===null||v===undefined)?'':String(v).trim();
+  return (!s||s==='-')?'—':s;
+}
+function toast(msg){
+  var t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  clearTimeout(t._h);t._h=setTimeout(function(){t.classList.remove('show');},3200);
+}
+
+/* ── carga dos dados (JSONP no endpoint gviz) ── */
+function carregar(forcar){
+  if(forcar)toast('Carregando prioridades…');
+  var cb='pangPrio'+(++_cbSeq)+'_'+Date.now();
+  var s=document.createElement('script');
+  var limpar=function(){
+    try{delete window[cb];}catch(e){window[cb]=undefined;}
+    if(s.parentNode)s.parentNode.removeChild(s);
+  };
+  window[cb]=function(resp){
+    limpar();
+    try{
+      todos=processar(resp);
+      render();
+      if(forcar)toast('✔ '+todos.length+' OP(s) priorizada(s)');
+    }catch(e){
+      falha('Não foi possível interpretar a aba '+ABA+'.');
+    }
+  };
+  s.onerror=function(){
+    limpar();
+    falha('Erro ao acessar a planilha. Verifique a conexão e o compartilhamento da aba.');
+  };
+  s.src='https://docs.google.com/spreadsheets/d/'+SHEET_ID
+       +'/gviz/tq?tqx=out:json;responseHandler:'+cb
+       +'&sheet='+encodeURIComponent(ABA)+'&t='+Date.now();
+  document.head.appendChild(s);
+}
+
+function falha(msg){
+  var el=document.getElementById('msg');
+  el.style.display='block';
+  el.innerHTML='⚠ '+msg;
+  document.getElementById('cards').innerHTML='';
+  document.getElementById('resumo').style.display='none';
+  toast('⚠ '+msg);
+}
+
+/* Converte a resposta do gviz em objetos, localizando as colunas pelo rótulo
+   do cabeçalho (a aba pode ganhar colunas novas sem quebrar a página). */
+function processar(resp){
+  var tb=(resp&&resp.table)||{};
+  var cols=tb.cols||[], rows=tb.rows||[];
+  var idx={};
+  cols.forEach(function(c,i){
+    var lbl=((c&&c.label)||'').toString().trim().toUpperCase();
+    if(lbl&&idx[lbl]===undefined)idx[lbl]=i;
+  });
+  function val(cells,nome){
+    var i=idx[nome];
+    if(i===undefined||!cells[i])return '';
+    var c=cells[i];
+    return (c.v===null||c.v===undefined)?'':c.v;
+  }
+  var out=[];
+  rows.forEach(function(r){
+    var cells=(r&&r.c)||[];
+    var op=String(val(cells,'OP')||'').trim();
+    if(!op)return;                                   // linha vazia da aba
+    if(op.toUpperCase()==='OP')return;               // cabeçalho repetido
+    // 'verde' = está em Acabamento mas não foi marcada como prioridade.
+    var nivel=String(val(cells,'NIVEL')||'').trim().toLowerCase();
+    if(nivel!=='vermelho'&&nivel!=='amarelo')nivel='verde';
+    out.push({
+      op:op,
+      desc:txt(val(cells,'DESCRICAO')),
+      cor:txt(val(cells,'COR')),
+      tam:txt(val(cells,'TAM')),
+      qtd:Number(val(cells,'QTD'))||0,
+      nivel:nivel,
+      rup:Number(val(cells,'RUPTURA_SKU'))||0,
+      ofic:txt(val(cells,'OFICINA')),
+      geradoEm:String(val(cells,'GERADO_EM')||'').trim(),
+      periodo:String(val(cells,'PERIODO_RUPTURA')||'').trim(),
+      syncEm:String(val(cells,'SINCRONIZADO_EM')||'').trim()
+    });
+  });
+  // Ordem pedida: vermelho → amarelo → verde; dentro do nível, maior qtd primeiro.
+  out.sort(function(a,b){
+    var ra=NIVEL_ORDEM[a.nivel],rb=NIVEL_ORDEM[b.nivel];
+    if(ra!==rb)return ra-rb;
+    if(b.qtd!==a.qtd)return b.qtd-a.qtd;
+    return String(a.op).localeCompare(String(b.op),'pt-BR',{numeric:true});
+  });
+  return out;
+}
+
+/* ── render ── */
+function alternarNivel(nivel){
+  nivelFiltro=(nivelFiltro===nivel)?null:nivel;
+  render();
+}
+
+function render(){
+  var el=document.getElementById('cards');
+  var msg=document.getElementById('msg');
+  var resumo=document.getElementById('resumo');
+  var dataInfo=todos.length?todos[0]:null;
+
+  document.getElementById('infoSync').textContent =
+    dataInfo&&dataInfo.syncEm ? 'Sincronizado em '+dataInfo.syncEm : 'Sem sincronização registrada';
+
+  if(!todos.length){
+    ['rsOps','rsPcs'].forEach(function(id){document.getElementById(id).textContent='—';});
+    document.getElementById('chipVTxt').textContent='— urgente';
+    document.getElementById('chipATxt').textContent='— prioridade 2';
+    document.getElementById('chipGTxt').textContent='— sem prioridade';
+    el.innerHTML='';
+    msg.style.display='block';
+    msg.innerHTML='Nenhuma OP priorizada no momento.<br>'
+      +'<small style="color:var(--txt-s)">Marque a prioridade no Mapa de Produção para a lista aparecer aqui.</small>';
+    return;
+  }
+
+  // Resumo sempre sobre o total (o filtro só afeta os cards exibidos).
+  var q={vermelho:0,amarelo:0,verde:0},p={vermelho:0,amarelo:0,verde:0};
+  todos.forEach(function(x){q[x.nivel]++;p[x.nivel]+=x.qtd;});
+  document.getElementById('rsOps').textContent=n(todos.length);
+  document.getElementById('rsPcs').textContent=n(p.vermelho+p.amarelo+p.verde);
+  document.getElementById('chipVTxt').textContent=q.vermelho+' urgente · '+n(p.vermelho)+' pçs';
+  document.getElementById('chipATxt').textContent=q.amarelo+' prioridade 2 · '+n(p.amarelo)+' pçs';
+  document.getElementById('chipGTxt').textContent=q.verde+' sem prioridade · '+n(p.verde)+' pçs';
+  [['chipV','vermelho'],['chipA','amarelo'],['chipG','verde']].forEach(function(par){
+    document.getElementById(par[0]).classList.toggle('off',!!nivelFiltro&&nivelFiltro!==par[1]);
+  });
+
+  var lista=nivelFiltro
+    ? todos.filter(function(x){return x.nivel===nivelFiltro;})
+    : todos;
+
+  if(!lista.length){
+    el.innerHTML='';
+    msg.style.display='block';
+    msg.textContent='Nenhuma OP neste nível.';
+    return;
+  }
+  msg.style.display='none';
+
+  el.innerHTML=lista.map(function(x,i){
+    var cls=NIVEL_CLS[x.nivel]||'g';
+    var tag=NIVEL_TAG[x.nivel]||'Sem prioridade';
+    return '<div class="card '+cls+'">'
+      +'<div class="c-rank">'+(i+1)+'</div>'
+      +'<div class="c-top">'
+        +'<div class="c-op"><small>OP</small>'+x.op+'</div>'
+        +'<span class="c-tag '+cls+'">'+tag+'</span>'
+      +'</div>'
+      +'<div class="c-desc">'+x.desc+'</div>'
+      +'<div class="c-bot">'
+        +'<div class="c-atr">'
+          +'<div><span class="l">Cor</span><span class="v" title="'+x.cor+'">'+x.cor+'</span></div>'
+          +'<div><span class="l">Tam</span><span class="v">'+x.tam+'</span></div>'
+        +'</div>'
+        +'<div class="c-qtd"><span class="n">'+n(x.qtd)+'</span><span class="u"> pçs</span></div>'
+      +'</div>'
+      +'</div>';
+  }).join('');
+}
+
+/* ── relógio do header (mesmo do dashTV) ── */
+var DIAS=['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'];
+var MESES=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+function tickClock(){
+  var d=new Date();
+  function p(x){return x<10?'0'+x:x;}
+  document.getElementById('clock').textContent=p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds());
+  document.getElementById('clockDate').textContent=DIAS[d.getDay()]+', '+d.getDate()+' de '+MESES[d.getMonth()]+' de '+d.getFullYear();
+}
+setInterval(tickClock,1000);tickClock();
+
+/* ── init ── */
+carregar(false);
+setInterval(function(){carregar(false);},REFRESH_MS);
+</script>
+</body>
+</html>
