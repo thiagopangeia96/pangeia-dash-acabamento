@@ -207,9 +207,14 @@ body{font-family:-apple-system,'Segoe UI',sans-serif;background:linear-gradient(
    então não depende de CORS nem do Apps Script. */
 var SHEET_ID='1yrJkCYUyIdvdbkhgNnERoyL55bq5cfPcIYNwJqMmdOA';
 var ABA='Prioridade_Acabamento';
+/* Web App da planilha de produtividade — mesmo do index.html/dashTV. Usado só
+   para ler a aba Fila_Distribuicao (ação filaDistribuicao) e mostrar no card
+   o colaborador atribuído na página de fila. */
+var SCRIPT_URL="https://script.google.com/macros/s/AKfycbx3ApxHLtMoHFdm28uS0InVQ4pX8v67LoDYuS5u6brmqv1EaUDPLjjopeVKp8t_wB0/exec";
 var REFRESH_MS=5*60*1000;
 
 var todos=[];                    // linhas da aba, já ordenadas
+var atribFila={};                // op|tam|cor -> colaborador (fila de distribuição)
 var nivelFiltro=null;            // 'vermelho' | 'amarelo' | 'verde' | null (todos)
 var _cbSeq=0;
 
@@ -230,9 +235,30 @@ function toast(msg){
   clearTimeout(t._h);t._h=setTimeout(function(){t.classList.remove('show');},3200);
 }
 
+/* Colaborador atribuído na fila de distribuição: merge por OP+TAM+COR a cada
+   carga. Sem a ação no Apps Script (ou em erro de rede) segue sem nomes. */
+function normC(s){return String(s||'').trim().toUpperCase();}
+function chaveC(op,tam,cor){return normC(op)+'|'+normC(tam)+'|'+normC(cor);}
+function carregarAtrib(){
+  fetch(SCRIPT_URL+'?action=filaDistribuicao&t='+Date.now())
+    .then(function(r){return r.json();})
+    .then(function(j){
+      atribFila={};
+      if(j&&j.ok&&j.itens){
+        j.itens.forEach(function(x){
+          var colab=String(x.colaborador||'').trim();
+          if(colab)atribFila[chaveC(x.op,x.tam,x.cor)]=colab;
+        });
+      }
+      if(todos.length)render();
+    })
+    .catch(function(){});
+}
+
 /* ── carga dos dados (JSONP no endpoint gviz) ── */
 function carregar(forcar){
   if(forcar)toast('Carregando prioridades…');
+  carregarAtrib();
   var cb='pangPrio'+(++_cbSeq)+'_'+Date.now();
   var s=document.createElement('script');
   var limpar=function(){
@@ -397,6 +423,10 @@ function render(){
         +'<div class="c-atr">'
           +'<div><span class="l">Cor</span><span class="v" title="'+x.cor+'">'+x.cor+'</span></div>'
           +'<div><span class="l">Tam</span><span class="v">'+x.tam+'</span></div>'
+          +(function(){
+            var colab=atribFila[chaveC(x.op,x.tam,x.cor)]||'-';
+            return '<div><span class="l">Colab</span><span class="v" title="'+colab+'">'+colab+'</span></div>';
+          })()
         +'</div>'
         +'<div class="c-qtd"><span class="n">'+n(x.qtd)+'</span><span class="u"> pçs</span></div>'
       +'</div>'
