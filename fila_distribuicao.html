@@ -199,35 +199,20 @@ tbody tr.nv-g td:first-child{border-left-color:var(--verd-cl);}
    3. SELECT DE COLABORADORES — planilha de produtividade, pelo campo
       colaboradoras[] que o Web App já devolve para o index.html/dashTV.
 
-   Cole a ação no doGet do projeto do Apps Script (a planilha do ranking não é
-   a do projeto, por isso o openById):
-
-   if(e.parameter.action==='filaAtribuir'){
-     var novos=JSON.parse(e.parameter.itens||'[]');   // [{op,tam,cor}]
-     var colab=String(e.parameter.colab||'').trim();
-     var sh=SpreadsheetApp.openById('1yrJkCYUyIdvdbkhgNnERoyL55bq5cfPcIYNwJqMmdOA')
-             .getSheetByName('Prioridade_Acabamento');
-     function norm(x){return String(x===null||x===undefined?'':x).trim().toUpperCase();}
-     function chave(op,tam,cor){return norm(op)+'|'+norm(tam)+'|'+norm(cor);}
-     var dados=sh.getDataRange().getValues();
-     var cab=dados[0].map(norm);
-     var iOp=cab.indexOf('OP'),iTam=cab.indexOf('TAM'),iCor=cab.indexOf('COR');
-     var iCol=cab.indexOf('COLABORADOR');
-     if(iCol<0){iCol=cab.length;sh.getRange(1,iCol+1).setValue('COLABORADOR');}
-     var pos={};
-     for(var i=1;i<dados.length;i++)pos[chave(dados[i][iOp],dados[i][iTam],dados[i][iCor])]=i+1;
-     var n=0;
-     novos.forEach(function(x){
-       var k=chave(x.op,x.tam,x.cor);
-       if(pos[k]){sh.getRange(pos[k],iCol+1).setValue(colab);n++;}
-     });
-     return ContentService.createTextOutput(JSON.stringify({ok:true,atualizadas:n}))
-            .setMimeType(ContentService.MimeType.JSON);
-   }
+   A ação filaAtribuir mora no Code.gs do Web App da Conferência
+   (Pangeia96_protótipo_priorizacaoProducao/google_apps_script/Code.gs) — ela
+   grava via openById na planilha do ranking e cria a coluna COLABORADOR se
+   faltar. Depois de implantar aquele Web App ("Qualquer pessoa"), cole a URL
+   /exec dele na constante FILA_URL abaixo. Enquanto FILA_URL estiver vazia, a
+   gravação tenta o SCRIPT_URL (útil se a ação for colada no Web App da
+   produtividade em vez do da Conferência).
 */
 var SHEET_ID='1yrJkCYUyIdvdbkhgNnERoyL55bq5cfPcIYNwJqMmdOA';
 var ABA_OPS='Prioridade_Acabamento';
 var SCRIPT_URL="https://script.google.com/macros/s/AKfycbx3ApxHLtMoHFdm28uS0InVQ4pX8v67LoDYuS5u6brmqv1EaUDPLjjopeVKp8t_wB0/exec";
+/* Web App que grava a atribuição (Code.gs da Conferência). Vazio = usa o
+   SCRIPT_URL acima. */
+var FILA_URL="";
 var REFRESH_MS=5*60*1000;
 
 /* Mesma ordem de blocos da página de prioridade. */
@@ -414,7 +399,7 @@ function atribuir(){
                  .map(function(x){return {op:x.op,tam:x.tam,cor:x.cor};});
   if(!colab||!itens.length||_gravando)return;
   _gravando=true;atualizarBotao();
-  fetch(SCRIPT_URL+'?action=filaAtribuir'
+  fetch((FILA_URL||SCRIPT_URL)+'?action=filaAtribuir'
         +'&colab='+encodeURIComponent(colab)
         +'&itens='+encodeURIComponent(JSON.stringify(itens))
         +'&t='+Date.now())
@@ -426,7 +411,7 @@ function atribuir(){
         _sel={};
         carregar(false);           // relê as abas com a atribuição gravada
       }else{
-        toast('⚠ O Apps Script ainda não tem a ação filaAtribuir — veja o comentário no código desta página.');
+        toast('⚠ O Web App ainda não tem a ação filaAtribuir — implante o Code.gs da Conferência e preencha FILA_URL.');
       }
       atualizarBotao();
     })
