@@ -24,7 +24,9 @@ body{font-family:-apple-system,'Segoe UI',sans-serif;background:linear-gradient(
   /* Opaco de propósito: o header fica congelado no topo e os cards passam por baixo. */
   background:linear-gradient(135deg,#2A1655,#3D1B6B);
   border:1px solid var(--glass-brd);backdrop-filter:blur(12px);
-  border-radius:0 0 16px 16px;padding:9px 24px;margin-bottom:16px;
+  /* Padding vertical mínimo: com o título em 64,8px é ele quem dita a altura
+     do frame — o respiro em cima/embaixo fica o menor possível. */
+  border-radius:0 0 16px 16px;padding:2px 24px;margin-bottom:16px;
   display:flex;justify-content:space-between;align-items:center;gap:20px;
   position:sticky;top:0;z-index:60;overflow:hidden;
   box-shadow:0 8px 28px rgba(30,15,61,.35);
@@ -42,7 +44,7 @@ body{font-family:-apple-system,'Segoe UI',sans-serif;background:linear-gradient(
 .tb-title{position:relative;z-index:1;text-align:center;flex:1;min-width:260px;}
 /* Título em 2x sobre o 1,2x anterior (27 → 32,4 → 64,8px). Os breakpoints abaixo
    continuam reduzidos de propósito: em tela estreita o header não cabe nesse corpo. */
-.tb-title h1{font-size:64.8px;font-weight:800;color:#fff;line-height:1.1;letter-spacing:.01em;}
+.tb-title h1{font-size:64.8px;font-weight:800;color:#fff;line-height:1.05;letter-spacing:.01em;}
 .tb-title h1 span{color:var(--roxo-cl);}
 .tb-r{position:relative;z-index:1;text-align:right;}
 .clock{font-size:38px;font-weight:800;color:#fff;font-variant-numeric:tabular-nums;line-height:1;letter-spacing:1px;text-shadow:0 0 20px rgba(174,118,229,.45);}
@@ -105,9 +107,9 @@ body{font-family:-apple-system,'Segoe UI',sans-serif;background:linear-gradient(
 .c-atr .l{font-size:10.8px;font-weight:700;color:var(--txt-s);text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:2px;}
 .c-atr .v{font-size:15.6px;font-weight:700;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:132px;display:block;line-height:1.15;}
 .c-qtd{text-align:right;flex-shrink:0;}
-/* Quantidade em 2,5x (número 22→55px, unidade 9→22,5px). */
-.c-qtd .n{font-size:55px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums;}
-.c-qtd .u{font-size:22.5px;font-weight:700;color:var(--txt-s);text-transform:uppercase;letter-spacing:.08em;}
+/* Quantidade: 2,5x reduzido depois em 0,7x (número 22→55→38,5px, unidade 9→22,5→15,8px). */
+.c-qtd .n{font-size:38.5px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums;}
+.c-qtd .u{font-size:15.8px;font-weight:700;color:var(--txt-s);text-transform:uppercase;letter-spacing:.08em;}
 .card.v .c-qtd .n{color:var(--verm);}
 .card.a .c-qtd .n{color:var(--amb);}
 .card.g .c-qtd .n{color:var(--verd);}
