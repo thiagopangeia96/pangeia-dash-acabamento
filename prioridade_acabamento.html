@@ -40,7 +40,9 @@ body{font-family:-apple-system,'Segoe UI',sans-serif;background:linear-gradient(
 .brand-name{font-size:21px;font-weight:900;color:#fff;letter-spacing:3px;line-height:1;}
 .brand-sub{font-size:10px;font-weight:700;color:var(--hdr-s);letter-spacing:2px;text-transform:uppercase;margin-top:3px;}
 .tb-title{position:relative;z-index:1;text-align:center;flex:1;min-width:260px;}
-.tb-title h1{font-size:27px;font-weight:800;color:#fff;line-height:1.1;letter-spacing:.01em;}
+/* Título em 1,2x (27→32,4px). Os breakpoints abaixo continuam com o tamanho
+   reduzido de propósito: em tela estreita o header não cabe nesse corpo. */
+.tb-title h1{font-size:32.4px;font-weight:800;color:#fff;line-height:1.1;letter-spacing:.01em;}
 .tb-title h1 span{color:var(--roxo-cl);}
 .tb-r{position:relative;z-index:1;text-align:right;}
 .clock{font-size:38px;font-weight:800;color:#fff;font-variant-numeric:tabular-nums;line-height:1;letter-spacing:1px;text-shadow:0 0 20px rgba(174,118,229,.45);}
@@ -69,7 +71,9 @@ body{font-family:-apple-system,'Segoe UI',sans-serif;background:linear-gradient(
 .chip.off{opacity:.35;}
 
 /* ── CARDS ── */
-.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(272px,1fr));gap:12px;}
+/* Mínimo de 340px: com a OP em 38px, abaixo disso a tarja de nível (nowrap)
+   vazava para fora do card. */
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px;}
 /* Coluna flex: com .c-bot em margin-top:auto o rodapé fica colado embaixo, então
    cards que esticam (linha com descrição de 2 linhas) mantêm o mesmo respiro. */
 .card{background:#fff;border:1px solid var(--brd);border-left:5px solid var(--roxo-cl);border-radius:12px;padding:12px 16px 11px;position:relative;display:flex;flex-direction:column;box-shadow:0 2px 8px rgba(89,44,149,.06);transition:transform .15s,box-shadow .15s;}
@@ -84,15 +88,16 @@ body{font-family:-apple-system,'Segoe UI',sans-serif;background:linear-gradient(
 .card.g{border-left-color:var(--verd-cl);background:rgba(29,158,117,.20);border-color:rgba(15,110,86,.30);}
 .card.g .c-bot{border-top-color:rgba(15,110,86,.30);}
 .c-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px;}
-.c-op{font-size:19px;font-weight:800;letter-spacing:.01em;font-variant-numeric:tabular-nums;}
-.c-op small{font-size:11px;font-weight:700;color:var(--txt-s);text-transform:uppercase;letter-spacing:.1em;margin-right:5px;}
-.c-tag{font-size:9px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;padding:4px 9px;border-radius:20px;white-space:nowrap;}
+/* OP em 2x (rótulo 11→22px, número 19→38px) — é o dado que se lê primeiro de longe. */
+.c-op{font-size:38px;font-weight:800;letter-spacing:.01em;font-variant-numeric:tabular-nums;line-height:1.05;min-width:0;overflow-wrap:anywhere;}
+.c-op small{font-size:22px;font-weight:700;color:var(--txt-s);text-transform:uppercase;letter-spacing:.1em;margin-right:5px;}
+.c-tag{font-size:9px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;padding:4px 9px;border-radius:20px;white-space:nowrap;flex-shrink:0;}
 .c-tag.v{background:var(--verm-cl);color:#fff;}
 .c-tag.a{background:var(--amb-cl);color:#4A2606;}
 .c-tag.g{background:var(--verd-cl);color:#fff;}
 /* Sem min-height: a 2ª linha era reservada mesmo em descrição curta e criava um
    vão morto acima do tracejado. */
-.c-desc{font-size:23.4px;font-weight:700;color:var(--roxo);line-height:1.2;margin-bottom:10px;}
+.c-desc{font-size:28.1px;font-weight:700;color:var(--roxo);line-height:1.2;margin-bottom:10px;}
 .c-bot{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;border-top:1px dashed var(--brd);padding-top:10px;margin-top:auto;}
 .c-atr{display:flex;gap:20px;}
 .c-atr div{min-width:0;}
@@ -292,6 +297,7 @@ function processar(resp){
       tam:txt(val(cells,'TAM')),
       qtd:Number(val(cells,'QTD'))||0,
       nivel:nivel,
+      rank:Number(val(cells,'RANK'))||0,
       rup:Number(val(cells,'RUPTURA_SKU'))||0,
       ofic:txt(val(cells,'OFICINA')),
       geradoEm:String(val(cells,'GERADO_EM')||'').trim(),
@@ -299,8 +305,13 @@ function processar(resp){
       syncEm:String(val(cells,'SINCRONIZADO_EM')||'').trim()
     });
   });
-  // Ordem pedida: vermelho → amarelo → verde; dentro do nível, maior qtd primeiro.
+  /* A fila é a da planilha: manda a coluna RANK, mesmo que isso intercale um card
+     sem prioridade no meio dos urgentes (o RANK já agrupa por OP/produto).
+     Sem RANK na linha, cai na ordem antiga (nível → maior qtd) no fim da lista,
+     para a página continuar de pé se a coluna sumir da aba. */
   out.sort(function(a,b){
+    var ka=a.rank>0?a.rank:Infinity, kb=b.rank>0?b.rank:Infinity;
+    if(ka!==kb)return ka-kb;
     var ra=NIVEL_ORDEM[a.nivel],rb=NIVEL_ORDEM[b.nivel];
     if(ra!==rb)return ra-rb;
     if(b.qtd!==a.qtd)return b.qtd-a.qtd;
@@ -366,7 +377,7 @@ function render(){
     var cls=NIVEL_CLS[x.nivel]||'g';
     var tag=NIVEL_TAG[x.nivel]||'Sem prioridade';
     return '<div class="card '+cls+'">'
-      +'<div class="c-rank">'+(i+1)+'</div>'
+      +'<div class="c-rank">'+(x.rank>0?x.rank:(i+1))+'</div>'
       +'<div class="c-top">'
         +'<div class="c-op"><small>OP</small>'+x.op+'</div>'
         +'<span class="c-tag '+cls+'">'+tag+'</span>'
