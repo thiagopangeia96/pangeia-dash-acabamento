@@ -306,24 +306,20 @@ function processar(resp){
       syncEm:String(val(cells,'SINCRONIZADO_EM')||'').trim()
     });
   });
-  /* Soma das peças por (nível + OP): é ela que posiciona o bloco da OP dentro do
-     nível. A mesma OP em níveis diferentes forma grupos diferentes de propósito —
-     uma OP com SKU urgente e SKU sem prioridade aparece colada no bloco urgente e
-     recomeça a sequência lá embaixo, no bloco de baixo (16 das 106 OPs são assim). */
-  var soma={};
-  out.forEach(function(x){
-    x.grupo=x.nivel+'|'+x.op;
-    soma[x.grupo]=(soma[x.grupo]||0)+x.qtd;
-  });
-  out.forEach(function(x){x.somaGrupo=soma[x.grupo];});
+  /* 1) Soma as peças da OP INTEIRA (todos os SKUs, todos os níveis): é esse
+     total que dá a força da OP no ranking. */
+  var somaOp={};
+  out.forEach(function(x){somaOp[x.op]=(somaOp[x.op]||0)+x.qtd;});
+  out.forEach(function(x){x.somaOp=somaOp[x.op];});
 
-  /* Ordem: nível → soma da OP naquele nível → OP → maior SKU. O RANK da aba entra
-     só como último desempate (a fila em si é montada aqui, não na planilha). */
+  /* 2) Rank = prioridade × soma da OP; 3) os cards da OP que estão em outra
+     prioridade são empurrados para o bloco da prioridade deles, carregando a
+     mesma soma total — a OP mista aparece cedo nos dois blocos (16/106 OPs). */
   out.sort(function(a,b){
     var ra=NIVEL_ORDEM[a.nivel],rb=NIVEL_ORDEM[b.nivel];
     if(ra!==rb)return ra-rb;
-    if(b.somaGrupo!==a.somaGrupo)return b.somaGrupo-a.somaGrupo;
-    // Grupos empatados na soma não podem se intercalar: a OP decide.
+    if(b.somaOp!==a.somaOp)return b.somaOp-a.somaOp;
+    // OPs empatadas na soma não podem se intercalar: a OP decide.
     if(a.op!==b.op)return String(a.op).localeCompare(String(b.op),'pt-BR',{numeric:true});
     if(b.qtd!==a.qtd)return b.qtd-a.qtd;
     var ka=a.rank>0?a.rank:Infinity, kb=b.rank>0?b.rank:Infinity;
