@@ -190,55 +190,38 @@ tbody tr.nv-g td:first-child{border-left-color:var(--verd-cl);}
    1. LISTA DE OPs — aba "Prioridade_Acabamento" (a mesma da página de
       prioridade), lida via gviz/JSONP. A fila usa a MESMA ordem do ranking de
       prioridade: nível → soma da OP inteira → OP → maior SKU.
-   2. ATRIBUIÇÕES — persistidas numa aba NOVA ("Fila_Distribuicao") da planilha
-      de REGISTRO DE PRODUTIVIDADE (a planilha do Web App), com colunas
-      OP | DESCRICAO | COR | TAM | COLABORADOR | ATUALIZADO_EM. Como essa
-      planilha não é pública, leitura E escrita passam pelo Apps Script
-      (ações filaDistribuicao / filaAtribuir abaixo), nunca pelo gviz.
-   3. SELECT DE COLABORADORES — a mesma planilha de produtividade, pelo campo
+   2. ATRIBUIÇÕES — persistidas na MESMA aba do ranking
+      ("Prioridade_Acabamento"), numa coluna chamada COLABORADOR, gravada pelo
+      Apps Script durante a atribuição aqui na fila (ação filaAtribuir abaixo).
+      A leitura vem de graça no mesmo gviz da lista — sem chamada extra.
+      ATENÇÃO: a aba é reescrita pela sincronização do Mapa de Produção; a
+      coluna COLABORADOR precisa ser preservada por lá para não perder os nomes.
+   3. SELECT DE COLABORADORES — planilha de produtividade, pelo campo
       colaboradoras[] que o Web App já devolve para o index.html/dashTV.
 
-   Cole as DUAS ações no doGet do projeto do Apps Script (o projeto é vinculado
-   à planilha de produtividade, por isso o SpreadsheetApp.getActive()):
+   Cole a ação no doGet do projeto do Apps Script (a planilha do ranking não é
+   a do projeto, por isso o openById):
 
-   function filaSheet_(){
-     var ss=SpreadsheetApp.getActive();
-     var sh=ss.getSheetByName('Fila_Distribuicao');
-     if(!sh){
-       sh=ss.insertSheet('Fila_Distribuicao');
-       sh.appendRow(['OP','DESCRICAO','COR','TAM','COLABORADOR','ATUALIZADO_EM']);
-     }
-     return sh;
-   }
-   // dentro do doGet(e):
-   if(e.parameter.action==='filaDistribuicao'){
-     var dados=filaSheet_().getDataRange().getValues();
-     var itens=[];
-     for(var i=1;i<dados.length;i++){
-       if(!dados[i][0])continue;
-       itens.push({op:String(dados[i][0]),desc:String(dados[i][1]),
-                   cor:String(dados[i][2]),tam:String(dados[i][3]),
-                   colaborador:String(dados[i][4])});
-     }
-     return ContentService.createTextOutput(JSON.stringify({ok:true,itens:itens}))
-            .setMimeType(ContentService.MimeType.JSON);
-   }
    if(e.parameter.action==='filaAtribuir'){
-     var novos=JSON.parse(e.parameter.itens||'[]');   // [{op,tam,cor,desc}]
+     var novos=JSON.parse(e.parameter.itens||'[]');   // [{op,tam,cor}]
      var colab=String(e.parameter.colab||'').trim();
-     var sh=filaSheet_();
+     var sh=SpreadsheetApp.openById('1yrJkCYUyIdvdbkhgNnERoyL55bq5cfPcIYNwJqMmdOA')
+             .getSheetByName('Prioridade_Acabamento');
      function norm(x){return String(x===null||x===undefined?'':x).trim().toUpperCase();}
      function chave(op,tam,cor){return norm(op)+'|'+norm(tam)+'|'+norm(cor);}
      var dados=sh.getDataRange().getValues();
+     var cab=dados[0].map(norm);
+     var iOp=cab.indexOf('OP'),iTam=cab.indexOf('TAM'),iCor=cab.indexOf('COR');
+     var iCol=cab.indexOf('COLABORADOR');
+     if(iCol<0){iCol=cab.length;sh.getRange(1,iCol+1).setValue('COLABORADOR');}
      var pos={};
-     for(var i=1;i<dados.length;i++)pos[chave(dados[i][0],dados[i][3],dados[i][2])]=i+1;
-     var agora=new Date();
+     for(var i=1;i<dados.length;i++)pos[chave(dados[i][iOp],dados[i][iTam],dados[i][iCor])]=i+1;
+     var n=0;
      novos.forEach(function(x){
        var k=chave(x.op,x.tam,x.cor);
-       if(pos[k])sh.getRange(pos[k],5,1,2).setValues([[colab,agora]]);
-       else sh.appendRow([x.op,x.desc||'',x.cor,x.tam,colab,agora]);
+       if(pos[k]){sh.getRange(pos[k],iCol+1).setValue(colab);n++;}
      });
-     return ContentService.createTextOutput(JSON.stringify({ok:true,atualizadas:novos.length}))
+     return ContentService.createTextOutput(JSON.stringify({ok:true,atualizadas:n}))
             .setMimeType(ContentService.MimeType.JSON);
    }
 */
@@ -251,8 +234,7 @@ var REFRESH_MS=5*60*1000;
 var NIVEL_ORDEM={vermelho:0,amarelo:1,verde:2};
 var NIVEL_CLS={vermelho:'nv-v',amarelo:'nv-a',verde:'nv-g'};
 
-var todos=[];        // OPs da aba de prioridade, já na ordem do ranking
-var atrib={};        // chave op|tam|cor -> colaborador (aba Fila_Distribuicao)
+var todos=[];        // OPs da aba de prioridade, já na ordem do ranking (com colab)
 var _sel={};         // chaves marcadas no checkbox
 var _cbSeq=0;
 var _gravando=false;
@@ -359,28 +341,8 @@ function carregar(forcar){
     todos.forEach(function(x){vivas[chave(x)]=1;});
     Object.keys(_sel).forEach(function(k){if(!vivas[k])delete _sel[k];});
 
-    // MERGE das atribuições, sempre que a fila carrega: busca no Web App a aba
-    // Fila_Distribuicao (planilha de produtividade) e cruza por OP+TAM+COR.
-    fetch(SCRIPT_URL+'?action=filaDistribuicao&t='+Date.now())
-      .then(function(r){return r.json();})
-      .then(function(j){
-        if(j&&j.ok&&j.itens){
-          atrib={};
-          j.itens.forEach(function(x){
-            var colab=String(x.colaborador||'').trim();
-            if(colab)atrib[chave({op:x.op,tam:x.tam,cor:x.cor})]=colab;
-          });
-        }else{
-          // Web App sem a ação filaDistribuicao ainda: fila sem nomes.
-          atrib={};
-        }
-        render();
-        if(forcar)toast('✔ '+todos.length+' item(ns) na fila');
-      })
-      .catch(function(){
-        atrib={};
-        render();
-      });
+    render();
+    if(forcar)toast('✔ '+todos.length+' item(ns) na fila');
   },function(){
     falha('Erro ao acessar a planilha. Verifique a conexão e o compartilhamento.');
   });
@@ -416,7 +378,8 @@ function processarOps(resp){
       tam:txt(val(cells,'TAM')),
       qtd:Number(val(cells,'QTD'))||0,
       nivel:nivel,
-      rank:Number(val(cells,'RANK'))||0
+      rank:Number(val(cells,'RANK'))||0,
+      colab:(function(){var c=String(val(cells,'COLABORADOR')||'').trim();return c==='-'?'':c;})()
     });
   });
   var somaOp={};
@@ -448,7 +411,7 @@ function atualizarBotao(){
 function atribuir(){
   var colab=document.getElementById('selColab').value;
   var itens=todos.filter(function(x){return _sel[chave(x)];})
-                 .map(function(x){return {op:x.op,tam:x.tam,cor:x.cor,desc:x.desc};});
+                 .map(function(x){return {op:x.op,tam:x.tam,cor:x.cor};});
   if(!colab||!itens.length||_gravando)return;
   _gravando=true;atualizarBotao();
   fetch(SCRIPT_URL+'?action=filaAtribuir'
@@ -496,7 +459,7 @@ function render(){
 
   tbody.innerHTML=todos.map(function(x,i){
     var k=chave(x), on=!!_sel[k];
-    var colab=atrib[k]||'';
+    var colab=x.colab;
     return '<tr class="'+NIVEL_CLS[x.nivel]+(on?' marcada':'')+'">'
       +'<td class="t-chk"><input type="checkbox" data-k="'+esc(k)+'"'+(on?' checked':'')+'></td>'
       +'<td class="t-pos">'+(i+1)+'</td>'
