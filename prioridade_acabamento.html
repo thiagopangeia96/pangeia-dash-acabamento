@@ -333,6 +333,7 @@ function render(){
     msg.style.display='block';
     msg.innerHTML='Nenhuma OP priorizada no momento.<br>'
       +'<small style="color:var(--txt-s)">Marque a prioridade no Mapa de Produção para a lista aparecer aqui.</small>';
+    ajustarZoom();
     return;
   }
 
@@ -356,6 +357,7 @@ function render(){
     el.innerHTML='';
     msg.style.display='block';
     msg.textContent='Nenhuma OP neste nível.';
+    ajustarZoom();
     return;
   }
   msg.style.display='none';
@@ -379,7 +381,76 @@ function render(){
       +'</div>'
       +'</div>';
   }).join('');
+
+  ajustarZoom();
 }
+
+/* ── ZOOM ADAPTATIVO ──
+   A tela é lida de longe: com poucas fileiras de card damos zoom para dentro,
+   com muitas fileiras vamos para fora — sempre buscando caber tudo numa tela.
+   Regra pedida: acima de FILEIRAS_ALVO fileiras o zoom nunca passa de 100%;
+   com FILEIRAS_ALVO ou menos ele pode crescer até ZOOM_MAX.
+   O zoom vai em .wrap (não no body) para o padding do body não escalar e para o
+   min-height:100vh não inventar barra de rolagem quando o zoom passa de 1. */
+var ZOOM_MIN=70, ZOOM_MAX=150, ZOOM_PASSO=5;   // em % inteiro (evita erro de ponto flutuante)
+var FILEIRAS_ALVO=5;
+var LARG_BASE=1400;                            // mesma max-width do .wrap no CSS
+var _zoomTmr=null;
+
+/* Conta fileiras pelo offsetTop dos cards — o grid usa auto-fill, então o número
+   de colunas (e de fileiras) muda a cada zoom e só o layout real sabe qual é. */
+function fileirasCards(){
+  var cards=document.getElementById('cards').children;
+  var vistos={},q=0;
+  for(var i=0;i<cards.length;i++){
+    var t=Math.round(cards[i].offsetTop);
+    if(vistos[t]===undefined){vistos[t]=1;q++;}
+  }
+  return q;
+}
+
+function ajustarZoom(){
+  var wrap=document.querySelector('.wrap');
+  if(!wrap)return;
+  var cards=document.getElementById('cards');
+  if(!cards||!cards.children.length){wrap.style.zoom='';wrap.style.maxWidth='';return;}
+
+  var cs=getComputedStyle(document.body);
+  var padY=parseFloat(cs.paddingBottom)||0;
+  var padX=parseFloat(cs.paddingLeft)||0;
+  var alvoAlt=window.innerHeight-padY-4;
+  /* Largura que o wrap deve ocupar na tela — o max-width do CSS é medido em px já
+     zoomados, então sem compensar 1/zoom o layout encolhe junto e o número de
+     colunas não muda (zoom para fora não ganharia nenhum card por tela). */
+  var largVisual=Math.min(LARG_BASE,document.documentElement.clientWidth-padX*2);
+  var escolhido=ZOOM_MIN;
+
+  /* Do maior zoom para o menor: para no primeiro que caiba na tela e respeite o
+     teto de 100% quando há mais fileiras que FILEIRAS_ALVO. */
+  var resumo=document.getElementById('resumo');
+  for(var z=ZOOM_MAX;z>=ZOOM_MIN;z-=ZOOM_PASSO){
+    aplicarZoom(wrap,z,largVisual);
+    var alt=wrap.getBoundingClientRect().height;
+    var fil=fileirasCards();
+    /* A barra de resumo é linha única (nowrap): se ela estourar a largura, o botão
+       Atualizar fica escondido atrás do scroll horizontal — então ela também
+       limita o quanto o zoom pode crescer. */
+    var resumoOk=!resumo||resumo.scrollWidth<=resumo.clientWidth+1;
+    if(alt<=alvoAlt&&resumoOk&&(fil<=FILEIRAS_ALVO||z<=100)){escolhido=z;break;}
+  }
+  aplicarZoom(wrap,escolhido,largVisual);
+}
+
+function aplicarZoom(wrap,z,largVisual){
+  wrap.style.zoom=(z/100).toFixed(2);
+  wrap.style.maxWidth=Math.round(largVisual*100/z)+'px';
+}
+
+/* Redimensionar a janela muda colunas e fileiras — recalcula com debounce. */
+window.addEventListener('resize',function(){
+  clearTimeout(_zoomTmr);
+  _zoomTmr=setTimeout(ajustarZoom,150);
+});
 
 /* ── relógio do header (mesmo do dashTV) ── */
 var DIAS=['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'];
