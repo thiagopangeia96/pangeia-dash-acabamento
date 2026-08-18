@@ -100,12 +100,18 @@ body{font-family:-apple-system,'Segoe UI',sans-serif;background:linear-gradient(
 /* Sem min-height: a 2ª linha era reservada mesmo em descrição curta e criava um
    vão morto acima do tracejado. */
 .c-desc{font-size:28.1px;font-weight:700;color:var(--roxo);line-height:1.2;margin-bottom:10px;}
-.c-bot{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;border-top:1px dashed var(--brd);padding-top:10px;margin-top:auto;}
-.c-atr{display:flex;gap:20px;}
-.c-atr div{min-width:0;}
-/* Cor/Tam em 1,2x (rótulo 9→10.8px, valor 13→15.6px). */
-.c-atr .l{font-size:10.8px;font-weight:700;color:var(--txt-s);text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:2px;}
-.c-atr .v{font-size:15.6px;font-weight:700;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:132px;display:block;line-height:1.15;}
+/* padding-top mínimo: os valores encostam no tracejado. */
+.c-bot{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;border-top:1px dashed var(--brd);padding-top:2px;margin-top:auto;}
+/* gap menor: com valor em 20,3px + coluna Colab, 20px estourava o card. */
+.c-atr{display:flex;gap:10px;min-width:0;}
+/* Cor e Tam não encolhem; quando falta espaço, quem cede (com ellipsis) é a
+   última coluna, o Colab. */
+.c-atr div{min-width:0;flex-shrink:0;}
+.c-atr div:last-child{flex-shrink:1;}
+/* Cor/Tam/Colab: rótulo em mais 1,2x (10,8→13px) e valor em mais 1,3x
+   (15,6→20,3px); max-width acompanha para o nome não truncar cedo demais. */
+.c-atr .l{font-size:13px;font-weight:700;color:var(--txt-s);text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:2px;}
+.c-atr .v{font-size:20.3px;font-weight:700;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px;display:block;line-height:1.15;}
 .c-qtd{text-align:right;flex-shrink:0;}
 /* Quantidade: 2,5x reduzido depois em 0,7x (número 22→55→38,5px, unidade 9→22,5→15,8px). */
 .c-qtd .n{font-size:38.5px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums;}
