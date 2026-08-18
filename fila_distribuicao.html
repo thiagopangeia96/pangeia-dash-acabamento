@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pangeia · Fila Distribuição — Acabamento</title>
+<style>
+:root{
+  --roxo:#592C95;--roxo-esc:#3D1B6B;--roxo-cl:#AE76E5;
+  --lav:#E4D4F9;--lav-l:#F5EEFB;--amarelo:#FFD23F;
+  --txt:#2A1655;--txt-s:#6B5B8E;--brd:#D9C7F0;
+  --verm:#A32D2D;--verm-cl:#E24B4A;
+  --amb:#854F0B;--amb-cl:#EF9F27;
+  --verd:#0F6E56;--verd-cl:#1D9E75;
+  /* Header espelhado do dashTV: vidro escuro sobre o roxo profundo. */
+  --roxo-prof:#1E0F3D;--glass-brd:rgba(255,255,255,.14);--hdr-s:#CBB8EC;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,'Segoe UI',sans-serif;background:linear-gradient(135deg,#F5EEFB,#fff);color:var(--txt);min-height:100vh;padding:0 20px 20px;font-size:14px;}
+.wrap{max-width:1400px;margin:0 auto;}
+
+/* ── TOPBAR (mesma da página de prioridade; só o título muda) ── */
+.topbar{
+  background:linear-gradient(135deg,#2A1655,#3D1B6B);
+  border:1px solid var(--glass-brd);backdrop-filter:blur(12px);
+  border-radius:0 0 16px 16px;padding:2px 24px;margin-bottom:16px;
+  display:flex;justify-content:space-between;align-items:center;gap:20px;
+  position:sticky;top:0;z-index:60;overflow:hidden;
+  box-shadow:0 8px 28px rgba(30,15,61,.35);
+}
+.topbar::before{content:'';position:absolute;right:-60px;top:-60px;width:240px;height:240px;background:var(--roxo-cl);opacity:.12;border-radius:50%;}
+.tb-l{display:flex;align-items:center;gap:16px;position:relative;z-index:1;}
+.bear-badge{
+  width:44px;height:44px;border-radius:50%;background:#fff;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  box-shadow:0 0 0 2px rgba(255,255,255,.15),0 4px 12px rgba(0,0,0,.35);
+}
+.bear-badge svg{width:29px;height:29px;display:block;}
+.brand-name{font-size:21px;font-weight:900;color:#fff;letter-spacing:3px;line-height:1;}
+.brand-sub{font-size:10px;font-weight:700;color:var(--hdr-s);letter-spacing:2px;text-transform:uppercase;margin-top:3px;}
+.tb-title{position:relative;z-index:1;text-align:center;flex:1;min-width:260px;}
+.tb-title h1{font-size:40px;font-weight:800;color:#fff;line-height:1.05;letter-spacing:.01em;}
+.tb-title h1 span{color:var(--roxo-cl);}
+.tb-r{position:relative;z-index:1;text-align:right;}
+.clock{font-size:38px;font-weight:800;color:#fff;font-variant-numeric:tabular-nums;line-height:1;letter-spacing:1px;text-shadow:0 0 20px rgba(174,118,229,.45);}
+.clock-date{font-size:12px;color:var(--hdr-s);font-weight:600;margin-top:4px;text-transform:capitalize;}
+
+/* ── BARRA DE AÇÃO ── */
+.barra{background:#fff;border:1px solid var(--brd);border-radius:12px;padding:12px 18px;margin-bottom:14px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;box-shadow:0 2px 8px rgba(89,44,149,.06);}
+.barra label{font-size:12px;font-weight:800;color:var(--txt-s);text-transform:uppercase;letter-spacing:.08em;}
+.barra select{
+  font-family:inherit;font-size:16px;font-weight:700;color:var(--txt);
+  background:var(--lav-l);border:1px solid var(--brd);border-radius:8px;
+  padding:8px 12px;min-width:260px;cursor:pointer;
+}
+.barra select:focus{outline:2px solid var(--roxo-cl);}
+.abtn{
+  background:var(--verd-cl);color:#fff;border:none;padding:10px 20px;border-radius:8px;
+  font-size:14px;font-weight:800;cursor:pointer;
+}
+.abtn:disabled{opacity:.35;cursor:not-allowed;}
+.rs{display:flex;align-items:baseline;gap:7px;}
+.rs-v{font-size:22px;font-weight:800;color:var(--roxo);font-variant-numeric:tabular-nums;line-height:1;}
+.rs-l{font-size:10px;font-weight:700;color:var(--txt-s);text-transform:uppercase;letter-spacing:.08em;}
+.b-dir{display:flex;align-items:center;gap:12px;margin-left:auto;}
+.sync-info{text-align:right;color:var(--txt-s);font-size:10px;font-weight:600;line-height:1.5;white-space:nowrap;}
+.sync-info strong{font-size:11px;color:var(--txt);}
+.ubtn{background:var(--amarelo);color:var(--roxo-esc);border:none;padding:7px 16px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;}
+
+/* ── LISTA ── */
+.lista{background:#fff;border:1px solid var(--brd);border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(89,44,149,.06);}
+table{width:100%;border-collapse:collapse;}
+thead th{
+  background:var(--roxo-esc);color:#fff;font-size:13px;font-weight:800;
+  text-transform:uppercase;letter-spacing:.1em;padding:12px 16px;text-align:left;
+  position:sticky;top:0;
+}
+tbody td{padding:14px 16px;border-top:1px solid var(--lav);vertical-align:middle;}
+tbody tr:nth-child(even){background:var(--lav-l);}
+tbody tr.marcada{background:#EAF7F2;}
+/* Tarja de nível na borda esquerda: a fila herda a prioridade da aba. */
+tbody tr td:first-child{border-left:5px solid transparent;}
+tbody tr.nv-v td:first-child{border-left-color:var(--verm-cl);}
+tbody tr.nv-a td:first-child{border-left-color:var(--amb-cl);}
+tbody tr.nv-g td:first-child{border-left-color:var(--verd-cl);}
+.t-chk{width:52px;text-align:center;}
+.t-chk input,thead .t-chk input{width:22px;height:22px;cursor:pointer;accent-color:var(--roxo);}
+.t-pos{font-size:16px;font-weight:800;color:var(--txt-s);font-variant-numeric:tabular-nums;width:56px;}
+.t-op{font-size:24px;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap;}
+.t-op small{font-size:12px;font-weight:700;color:var(--txt-s);margin-right:5px;}
+.t-desc{font-size:21px;font-weight:700;color:var(--roxo);}
+.t-attr{font-size:18px;font-weight:700;white-space:nowrap;}
+.t-colab{font-size:18px;font-weight:800;white-space:nowrap;}
+.t-colab .pill{display:inline-block;background:var(--lav);color:var(--roxo-esc);border-radius:20px;padding:6px 16px;}
+.t-colab .livre{color:var(--txt-s);font-weight:600;}
+
+.msg{background:#fff;border:1px solid var(--brd);border-radius:12px;padding:48px 24px;text-align:center;color:var(--txt-s);font-size:15px;}
+.toast{position:fixed;bottom:20px;right:20px;background:var(--roxo-esc);color:#fff;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;box-shadow:0 10px 34px rgba(0,0,0,.35);opacity:0;transition:opacity .25s;pointer-events:none;z-index:100;}
+.toast.show{opacity:1;}
+
+@media(max-width:900px){
+  .tb-title{min-width:0;}
+  .tb-title h1{font-size:22px;}
+  .clock{font-size:28px;}
+  .t-desc{font-size:16px;}
+  .t-op{font-size:18px;}
+}
+@media(max-width:700px){
+  body{padding:0 12px 12px;}
+  .topbar{padding:2px 14px;gap:10px;}
+  .bear-badge{width:34px;height:34px;}
+  .bear-badge svg{width:22px;height:22px;}
+  .brand-name{font-size:16px;letter-spacing:2px;}
+  .brand-sub{display:none;}
+  .tb-title h1{font-size:17px;}
+  .clock{font-size:22px;}
+  .clock-date{display:none;}
+  .barra select{min-width:0;flex:1;}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- HEADER (igual à página de prioridade, congelado no topo) -->
+  <div class="topbar">
+    <div class="tb-l">
+      <div class="bear-badge">
+        <!-- Urso preto -->
+        <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-label="Urso Pangeia">
+          <g fill="#000">
+            <circle cx="17" cy="16" r="9"/>
+            <circle cx="47" cy="16" r="9"/>
+            <ellipse cx="32" cy="36" rx="22" ry="20"/>
+          </g>
+          <ellipse cx="32" cy="44" rx="10" ry="8" fill="#fff" opacity=".95"/>
+          <ellipse cx="32" cy="41" rx="4" ry="3" fill="#000"/>
+          <circle cx="24" cy="30" r="2.6" fill="#fff"/>
+          <circle cx="40" cy="30" r="2.6" fill="#fff"/>
+        </svg>
+      </div>
+      <div>
+        <div class="brand-name">PANGEIA</div>
+        <div class="brand-sub">Pangeia 96</div>
+      </div>
+    </div>
+    <div class="tb-title">
+      <h1>Fila Distribuição <span>Acabamento</span></h1>
+    </div>
+    <div class="tb-r">
+      <div class="clock" id="clock">--:--:--</div>
+      <div class="clock-date" id="clockDate">—</div>
+    </div>
+  </div>
+
+  <!-- SELEÇÃO DO COLABORADOR + ATRIBUIÇÃO -->
+  <div class="barra">
+    <label for="selColab">Selecione o Colaborador</label>
+    <select id="selColab" onchange="atualizarBotao()">
+      <option value="">— escolha —</option>
+    </select>
+    <button class="abtn" id="btnAtribuir" onclick="atribuir()" disabled>✔ Atribuir selecionadas</button>
+    <div class="rs"><span class="rs-v" id="rsItens">—</span><span class="rs-l">na fila</span></div>
+    <div class="b-dir">
+      <div class="sync-info"><strong id="infoSync">—</strong></div>
+      <button class="ubtn" onclick="carregar(true)">↺ Atualizar</button>
+    </div>
+  </div>
+
+  <div class="lista" id="lista" style="display:none">
+    <table>
+      <thead>
+        <tr>
+          <th class="t-chk"><input type="checkbox" id="chkTodos" title="Marcar todas"></th>
+          <th>#</th><th>OP</th><th>Descrição</th><th>Tam</th><th>Cor</th><th>Colaborador</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+  <div class="msg" id="msg">Carregando fila de distribuição…</div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* Fontes de dados (Google Sheets, mesma planilha de acompanhamento de produção):
+
+   1. LISTA DE OPs — aba "Prioridade_Acabamento" (a mesma da página de
+      prioridade), lida via gviz/JSONP. A fila usa a MESMA ordem do ranking de
+      prioridade: nível → soma da OP inteira → OP → maior SKU.
+   2. ATRIBUIÇÕES — persistidas numa aba NOVA ("Fila_Distribuicao") da planilha
+      de REGISTRO DE PRODUTIVIDADE (a planilha do Web App), com colunas
+      OP | DESCRICAO | COR | TAM | COLABORADOR | ATUALIZADO_EM. Como essa
+      planilha não é pública, leitura E escrita passam pelo Apps Script
+      (ações filaDistribuicao / filaAtribuir abaixo), nunca pelo gviz.
+   3. SELECT DE COLABORADORES — a mesma planilha de produtividade, pelo campo
+      colaboradoras[] que o Web App já devolve para o index.html/dashTV.
+
+   Cole as DUAS ações no doGet do projeto do Apps Script (o projeto é vinculado
+   à planilha de produtividade, por isso o SpreadsheetApp.getActive()):
+
+   function filaSheet_(){
+     var ss=SpreadsheetApp.getActive();
+     var sh=ss.getSheetByName('Fila_Distribuicao');
+     if(!sh){
+       sh=ss.insertSheet('Fila_Distribuicao');
+       sh.appendRow(['OP','DESCRICAO','COR','TAM','COLABORADOR','ATUALIZADO_EM']);
+     }
+     return sh;
+   }
+   // dentro do doGet(e):
+   if(e.parameter.action==='filaDistribuicao'){
+     var dados=filaSheet_().getDataRange().getValues();
+     var itens=[];
+     for(var i=1;i<dados.length;i++){
+       if(!dados[i][0])continue;
+       itens.push({op:String(dados[i][0]),desc:String(dados[i][1]),
+                   cor:String(dados[i][2]),tam:String(dados[i][3]),
+                   colaborador:String(dados[i][4])});
+     }
+     return ContentService.createTextOutput(JSON.stringify({ok:true,itens:itens}))
+            .setMimeType(ContentService.MimeType.JSON);
+   }
+   if(e.parameter.action==='filaAtribuir'){
+     var novos=JSON.parse(e.parameter.itens||'[]');   // [{op,tam,cor,desc}]
+     var colab=String(e.parameter.colab||'').trim();
+     var sh=filaSheet_();
+     function norm(x){return String(x===null||x===undefined?'':x).trim().toUpperCase();}
+     function chave(op,tam,cor){return norm(op)+'|'+norm(tam)+'|'+norm(cor);}
+     var dados=sh.getDataRange().getValues();
+     var pos={};
+     for(var i=1;i<dados.length;i++)pos[chave(dados[i][0],dados[i][3],dados[i][2])]=i+1;
+     var agora=new Date();
+     novos.forEach(function(x){
+       var k=chave(x.op,x.tam,x.cor);
+       if(pos[k])sh.getRange(pos[k],5,1,2).setValues([[colab,agora]]);
+       else sh.appendRow([x.op,x.desc||'',x.cor,x.tam,colab,agora]);
+     });
+     return ContentService.createTextOutput(JSON.stringify({ok:true,atualizadas:novos.length}))
+            .setMimeType(ContentService.MimeType.JSON);
+   }
+*/
+var SHEET_ID='1yrJkCYUyIdvdbkhgNnERoyL55bq5cfPcIYNwJqMmdOA';
+var ABA_OPS='Prioridade_Acabamento';
+var SCRIPT_URL="https://script.google.com/macros/s/AKfycbx3ApxHLtMoHFdm28uS0InVQ4pX8v67LoDYuS5u6brmqv1EaUDPLjjopeVKp8t_wB0/exec";
+var REFRESH_MS=5*60*1000;
+
+/* Mesma ordem de blocos da página de prioridade. */
+var NIVEL_ORDEM={vermelho:0,amarelo:1,verde:2};
+var NIVEL_CLS={vermelho:'nv-v',amarelo:'nv-a',verde:'nv-g'};
+
+var todos=[];        // OPs da aba de prioridade, já na ordem do ranking
+var atrib={};        // chave op|tam|cor -> colaborador (aba Fila_Distribuicao)
+var _sel={};         // chaves marcadas no checkbox
+var _cbSeq=0;
+var _gravando=false;
+
+/* ── util ── */
+function txt(v){
+  var s=(v===null||v===undefined)?'':String(v).trim();
+  return (!s||s==='-')?'—':s;
+}
+function esc(s){
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function norm(s){return String(s||'').trim().toUpperCase();}
+function chave(x){return norm(x.op)+'|'+norm(x.tam)+'|'+norm(x.cor);}
+function toast(msg){
+  var t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  clearTimeout(t._h);t._h=setTimeout(function(){t.classList.remove('show');},3200);
+}
+
+/* ── colaboradores do select (planilha de produtividade, via Apps Script) ── */
+function carregarColabs(){
+  fetch(SCRIPT_URL+'?t='+Date.now())
+    .then(function(r){return r.json();})
+    .then(function(j){
+      var sel=document.getElementById('selColab');
+      var atual=sel.value;
+      var nomes=(j.colaboradoras||[]).slice().sort(function(a,b){
+        return String(a).localeCompare(String(b),'pt-BR');
+      });
+      var html='<option value="">— escolha —</option>';
+      nomes.forEach(function(n){
+        html+='<option value="'+esc(norm(n))+'">'+esc(n)+'</option>';
+      });
+      sel.innerHTML=html;
+      sel.value=atual;             // preserva a seleção no refresh
+      if(sel.value!==atual)sel.value='';
+      atualizarBotao();
+    })
+    .catch(function(){
+      toast('⚠ Não foi possível carregar a lista de colaboradores.');
+    });
+}
+
+/* ── leitura gviz genérica (JSONP) ── */
+function lerAba(aba,okFn,errFn){
+  var cb='pangFila'+(++_cbSeq)+'_'+Date.now();
+  var s=document.createElement('script');
+  var limpar=function(){
+    try{delete window[cb];}catch(e){window[cb]=undefined;}
+    if(s.parentNode)s.parentNode.removeChild(s);
+  };
+  window[cb]=function(resp){limpar();okFn(resp);};
+  s.onerror=function(){limpar();errFn();};
+  s.src='https://docs.google.com/spreadsheets/d/'+SHEET_ID
+       +'/gviz/tq?tqx=out:json;responseHandler:'+cb
+       +'&sheet='+encodeURIComponent(aba)+'&t='+Date.now();
+  document.head.appendChild(s);
+}
+
+/* Monta um índice rótulo→coluna. Com nome de aba inexistente o gviz devolve a
+   PRIMEIRA aba da planilha sem reclamar; se os rótulos vierem vazios, tenta a
+   primeira linha como cabeçalho. Devolve também as linhas de dados. */
+function indexar(resp){
+  var tb=(resp&&resp.table)||{};
+  var cols=tb.cols||[], rows=tb.rows||[];
+  var idx={};
+  cols.forEach(function(c,i){
+    var lbl=((c&&c.label)||'').toString().trim().toUpperCase();
+    if(lbl&&idx[lbl]===undefined)idx[lbl]=i;
+  });
+  if(idx['OP']===undefined&&rows.length){
+    var cab=(rows[0]&&rows[0].c)||[];
+    var idx2={};
+    cab.forEach(function(c,i){
+      var lbl=((c&&c.v)||'').toString().trim().toUpperCase();
+      if(lbl&&idx2[lbl]===undefined)idx2[lbl]=i;
+    });
+    if(idx2['OP']!==undefined){idx=idx2;rows=rows.slice(1);}
+  }
+  return {idx:idx,rows:rows};
+}
+function valFn(idx){
+  return function(cells,nome){
+    var i=idx[nome];
+    if(i===undefined||!cells[i])return '';
+    var c=cells[i];
+    return (c.v===null||c.v===undefined)?'':c.v;
+  };
+}
+
+/* ── carga: OPs da prioridade + atribuições ── */
+function carregar(forcar){
+  if(forcar)toast('Carregando fila…');
+  lerAba(ABA_OPS,function(resp){
+    try{
+      todos=processarOps(resp);
+    }catch(e){
+      falha('Não foi possível interpretar a aba '+ABA_OPS+'.');
+      return;
+    }
+    // Linhas que saíram da fila não podem continuar marcadas.
+    var vivas={};
+    todos.forEach(function(x){vivas[chave(x)]=1;});
+    Object.keys(_sel).forEach(function(k){if(!vivas[k])delete _sel[k];});
+
+    // MERGE das atribuições, sempre que a fila carrega: busca no Web App a aba
+    // Fila_Distribuicao (planilha de produtividade) e cruza por OP+TAM+COR.
+    fetch(SCRIPT_URL+'?action=filaDistribuicao&t='+Date.now())
+      .then(function(r){return r.json();})
+      .then(function(j){
+        if(j&&j.ok&&j.itens){
+          atrib={};
+          j.itens.forEach(function(x){
+            var colab=String(x.colaborador||'').trim();
+            if(colab)atrib[chave({op:x.op,tam:x.tam,cor:x.cor})]=colab;
+          });
+        }else{
+          // Web App sem a ação filaDistribuicao ainda: fila sem nomes.
+          atrib={};
+        }
+        render();
+        if(forcar)toast('✔ '+todos.length+' item(ns) na fila');
+      })
+      .catch(function(){
+        atrib={};
+        render();
+      });
+  },function(){
+    falha('Erro ao acessar a planilha. Verifique a conexão e o compartilhamento.');
+  });
+}
+
+function falha(msg){
+  var el=document.getElementById('msg');
+  el.style.display='block';
+  el.innerHTML='⚠ '+msg;
+  document.getElementById('lista').style.display='none';
+  document.getElementById('rsItens').textContent='—';
+  toast('⚠ '+msg);
+}
+
+/* OPs da aba de prioridade — mesmos campos e MESMA ordenação da página de
+   prioridade (nível → soma da OP inteira → OP → maior SKU → RANK). */
+function processarOps(resp){
+  var r=indexar(resp);
+  if(r.idx['OP']===undefined)throw new Error('SEM_ABA');
+  var val=valFn(r.idx);
+  var out=[];
+  r.rows.forEach(function(row){
+    var cells=(row&&row.c)||[];
+    var op=String(val(cells,'OP')||'').trim();
+    if(!op)return;
+    if(op.toUpperCase()==='OP')return;
+    var nivel=String(val(cells,'NIVEL')||'').trim().toLowerCase();
+    if(nivel!=='vermelho'&&nivel!=='amarelo')nivel='verde';
+    out.push({
+      op:op,
+      desc:txt(val(cells,'DESCRICAO')),
+      cor:txt(val(cells,'COR')),
+      tam:txt(val(cells,'TAM')),
+      qtd:Number(val(cells,'QTD'))||0,
+      nivel:nivel,
+      rank:Number(val(cells,'RANK'))||0
+    });
+  });
+  var somaOp={};
+  out.forEach(function(x){somaOp[x.op]=(somaOp[x.op]||0)+x.qtd;});
+  out.forEach(function(x){x.somaOp=somaOp[x.op];});
+  out.sort(function(a,b){
+    var ra=NIVEL_ORDEM[a.nivel],rb=NIVEL_ORDEM[b.nivel];
+    if(ra!==rb)return ra-rb;
+    if(b.somaOp!==a.somaOp)return b.somaOp-a.somaOp;
+    if(a.op!==b.op)return String(a.op).localeCompare(String(b.op),'pt-BR',{numeric:true});
+    if(b.qtd!==a.qtd)return b.qtd-a.qtd;
+    var ka=a.rank>0?a.rank:Infinity, kb=b.rank>0?b.rank:Infinity;
+    return ka-kb;
+  });
+  return out;
+}
+
+/* ── seleção e atribuição ── */
+function totalMarcadas(){return Object.keys(_sel).length;}
+
+function atualizarBotao(){
+  var b=document.getElementById('btnAtribuir');
+  var n=totalMarcadas();
+  var colab=document.getElementById('selColab').value;
+  b.disabled=_gravando||!n||!colab;
+  b.textContent=_gravando?'Gravando…':('✔ Atribuir'+(n?' '+n+' OP(s)':' selecionadas'));
+}
+
+function atribuir(){
+  var colab=document.getElementById('selColab').value;
+  var itens=todos.filter(function(x){return _sel[chave(x)];})
+                 .map(function(x){return {op:x.op,tam:x.tam,cor:x.cor,desc:x.desc};});
+  if(!colab||!itens.length||_gravando)return;
+  _gravando=true;atualizarBotao();
+  fetch(SCRIPT_URL+'?action=filaAtribuir'
+        +'&colab='+encodeURIComponent(colab)
+        +'&itens='+encodeURIComponent(JSON.stringify(itens))
+        +'&t='+Date.now())
+    .then(function(r){return r.json();})
+    .then(function(j){
+      _gravando=false;
+      if(j&&j.ok){
+        toast('✔ '+(j.atualizadas||itens.length)+' OP(s) atribuída(s) a '+colab);
+        _sel={};
+        carregar(false);           // relê as abas com a atribuição gravada
+      }else{
+        toast('⚠ O Apps Script ainda não tem a ação filaAtribuir — veja o comentário no código desta página.');
+      }
+      atualizarBotao();
+    })
+    .catch(function(){
+      _gravando=false;
+      toast('⚠ Erro ao gravar a atribuição. Tente novamente.');
+      atualizarBotao();
+    });
+}
+
+/* ── render ── */
+function render(){
+  var tbody=document.getElementById('tbody');
+  var lista=document.getElementById('lista');
+  var msg=document.getElementById('msg');
+  document.getElementById('infoSync').textContent=
+    'Atualizado '+new Date().toLocaleTimeString('pt-BR');
+  document.getElementById('rsItens').textContent=todos.length.toLocaleString('pt-BR');
+
+  if(!todos.length){
+    lista.style.display='none';
+    msg.style.display='block';
+    msg.innerHTML='Fila de distribuição vazia.<br>'
+      +'<small style="color:var(--txt-s)">Sem OPs na aba '+ABA_OPS+' no momento.</small>';
+    atualizarBotao();
+    return;
+  }
+  msg.style.display='none';
+  lista.style.display='block';
+
+  tbody.innerHTML=todos.map(function(x,i){
+    var k=chave(x), on=!!_sel[k];
+    var colab=atrib[k]||'';
+    return '<tr class="'+NIVEL_CLS[x.nivel]+(on?' marcada':'')+'">'
+      +'<td class="t-chk"><input type="checkbox" data-k="'+esc(k)+'"'+(on?' checked':'')+'></td>'
+      +'<td class="t-pos">'+(i+1)+'</td>'
+      +'<td class="t-op"><small>OP</small>'+esc(x.op)+'</td>'
+      +'<td class="t-desc">'+esc(x.desc)+'</td>'
+      +'<td class="t-attr">'+esc(x.tam)+'</td>'
+      +'<td class="t-attr">'+esc(x.cor)+'</td>'
+      +'<td class="t-colab">'+(colab
+          ?'<span class="pill">'+esc(colab)+'</span>'
+          :'<span class="livre">— sem colaborador —</span>')+'</td>'
+      +'</tr>';
+  }).join('');
+
+  var chkT=document.getElementById('chkTodos');
+  chkT.checked=todos.length>0&&totalMarcadas()===todos.length;
+  atualizarBotao();
+}
+
+/* Delegação: um listener para todos os checkboxes das linhas. */
+document.addEventListener('change',function(ev){
+  var el=ev.target;
+  if(el.id==='chkTodos'){
+    _sel={};
+    if(el.checked)todos.forEach(function(x){_sel[chave(x)]=1;});
+    render();
+    return;
+  }
+  if(el.getAttribute&&el.getAttribute('data-k')!==null){
+    var k=el.getAttribute('data-k');
+    if(el.checked)_sel[k]=1;else delete _sel[k];
+    var tr=el.closest?el.closest('tr'):null;
+    if(tr)tr.classList.toggle('marcada',el.checked);
+    document.getElementById('chkTodos').checked=totalMarcadas()===todos.length;
+    atualizarBotao();
+  }
+});
+
+/* ── relógio do header (mesmo da página de prioridade) ── */
+var DIAS=['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'];
+var MESES=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+function tickClock(){
+  var d=new Date();
+  function p(x){return x<10?'0'+x:x;}
+  document.getElementById('clock').textContent=p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds());
+  document.getElementById('clockDate').textContent=DIAS[d.getDay()]+', '+d.getDate()+' de '+MESES[d.getMonth()]+' de '+d.getFullYear();
+}
+setInterval(tickClock,1000);tickClock();
+
+/* ── init ── */
+carregarColabs();
+carregar(false);
+setInterval(function(){carregar(false);carregarColabs();},REFRESH_MS);
+</script>
+</body>
+</html>
